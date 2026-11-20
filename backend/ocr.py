@@ -11,6 +11,7 @@ from .config import settings
 MAX_IMAGE_BYTES = 6_000_000
 NO_TEXT = "未识别到清晰文字"
 _recognition_lock = asyncio.Lock()
+_rapid_engine = None
 
 
 class OCRServiceError(Exception):
@@ -38,11 +39,87 @@ def image_mime(image):
 
 async def recognize_text(image):
     mime = image_mime(image)
-    if not (settings.openai_base_url and settings.openai_model):
-        raise OCRServiceError(503, "请先配置并启动支持图片输入的模型，例如 Ollama qwen3-vl:4b")
     if _recognition_lock.locked():
         raise OCRServiceError(429, "已有识字任务正在处理，请稍后重试")
     async with _recognition_lock:
+        if settings.ocr_engine.lower() == "rapidocr":
+            try:
+                rapid_result = await asyncio.to_thread(_recognize_rapidocr, image)
+                # A configured legacy vision endpoint is used only when the
+                # primary detector found no text.  Normal RapidOCR successes
+                # never invoke a second model.
+                if rapid_result.get("has_text") or not (settings.openai_base_url and settings.openai_model):
+                    return rapid_result
+                return await _recognize_legacy_model(image, mime)
+            except ImportError:
+                # Keep existing Ollama installations usable until the optional
+                # ONNX packages are installed; production config should use
+                # OCR_ENGINE=rapidocr and install requirements-conda.txt.
+                if not (settings.openai_base_url and settings.openai_model):
+                    raise OCRServiceError(503, "RapidOCR 未安装，请安装 rapidocr_onnxruntime 和 onnxruntime") from None
+            except OCRServiceError:
+                raise
+            except Exception as error:
+                raise OCRServiceError(502, f"RapidOCR 识别失败: {error}") from None
+        if not (settings.openai_base_url and settings.openai_model):
+            raise OCRServiceError(503, "请先安装 RapidOCR，或配置兼容图片模型作为临时回退")
+        return await _recognize_legacy_model(image, mime)
+
+
+def _rapid_text(result):
+    """Normalize RapidOCR 1.x/2.x result shapes into reading-order text."""
+    items = result[0] if isinstance(result, tuple) and len(result) == 2 else result
+    if items is None:
+        return NO_TEXT
+    rows = []
+    for item in items:
+        if isinstance(item, dict):
+            text, score, box = item.get("text", ""), item.get("score", 0), item.get("box", item.get("points", [[0, 0]]))
+        elif len(item) >= 3:
+            box, text, score = item[0], item[1], item[2]
+        else:
+            continue
+        if str(text).strip() and float(score or 0) >= 0.25:
+            y = min(float(point[1]) for point in box) if box else 0
+            x = min(float(point[0]) for point in box) if box else 0
+            rows.append((round(y / 12), x, str(text).strip()))
+    if not rows:
+        return NO_TEXT
+    rows.sort(key=lambda value: (value[0], value[1]))
+    lines = []
+    last_y = None
+    for y, _, text in rows:
+        if lines and last_y is not None and abs(y - last_y) <= 1:
+            lines[-1] += " " + text
+        else:
+            lines.append(text)
+        last_y = y
+    return "\n".join(lines)[:12_000]
+
+
+def _recognize_rapidocr(image):
+    global _rapid_engine
+    try:
+        if _rapid_engine is None:
+            from rapidocr_onnxruntime import RapidOCR
+            _rapid_engine = RapidOCR()
+    except ImportError:
+        raise
+    try:
+        import cv2
+        import numpy as np
+        decoded = cv2.imdecode(np.frombuffer(image, dtype=np.uint8), cv2.IMREAD_COLOR)
+        if decoded is None:
+            raise ValueError("图片解码失败")
+        result, _ = _rapid_engine(decoded)
+    except TypeError:
+        result, _ = _rapid_engine(image)
+    text = _rapid_text(result)
+    return {"type": "ocr_result", "text": text, "has_text": text != NO_TEXT,
+            "truncated": False, "model": "rapidocr-onnxruntime"}
+
+
+async def _recognize_legacy_model(image, mime):
         encoded = base64.b64encode(image).decode("ascii")
         payload = {
             "model": settings.openai_model,

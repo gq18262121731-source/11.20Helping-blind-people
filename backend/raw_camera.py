@@ -129,6 +129,11 @@ class RawCameraConnection:
             direction = message.get("direction")
         elif message.get("type") == "device_command" and message.get("command") == "stop":
             direction = "stop"
+        elif message.get("type") == "family_message":
+            text = str(message.get("body", "")).strip()[:500]
+            if text:
+                await self.text("FAMILY_MESSAGE:" + text)
+            return
         else:
             return
         commands.extend({"left": (b"L",), "right": (b"R",)}.get(direction, ()))

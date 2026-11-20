@@ -1,2 +1,6 @@
 # Optional dependency for build_handoff.py; install in the yolo-blind environment.
 python-docx==1.2.0
+# Serial smoke test dependency used by tools/test_lu6288.py.
+pyserial>=3.5
+# Test runner for the Python test suite.
+pytest>=9.0

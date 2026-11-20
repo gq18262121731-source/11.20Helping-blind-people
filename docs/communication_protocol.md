@@ -14,8 +14,27 @@
 
 - 设备：`ws://<电脑局域网IP>:8765/ws/device`
 - 网页：`ws://<电脑局域网IP>:8765/ws/web`
+- 音频：`ws://<电脑局域网IP>:8765/ws/audio`
 
 端口由启动命令指定，路径在路由中固定。连接后先发送 `device_online`，随后每 10 秒发送 `heartbeat`。旧端点目前未强制校验设备共享密钥，仅用于可信局域网联调。
+
+## 音频会话（软件阶段已实现）
+
+音频通道与视频通道独立。先发送 `audio_start`，再发送二进制 PCM 分块，最后发送
+`audio_end`；取消时发送 `audio_cancel`。PCM 固定为 16kHz、16bit、单声道、小端序。
+二进制分块可直接发送 PCM，也可使用下方 QH 固定头（`frame_type=2`）：
+
+```json
+{"type":"audio_start","device_id":"morning_star_001","session_id":"session_001","sample_rate":16000,"channels":1,"bits_per_sample":16}
+{"type":"audio_end","session_id":"session_001"}
+```
+
+服务端一次只接受每个设备一个会话，分块必须为偶数字节且序号递增；超过大小、格式错误、超时或断线会回到 `LISTENING`，不会阻塞视觉检测。软件模拟可运行
+`python tools/audio_simulator.py sample.wav`，使用与 ESP32 相同的 WebSocket 入口。
+
+固件侧已预留独立 `audioWs` 连接和 `beginAudioSession` / `sampleAudioFrame` /
+`endAudioSession` 调用；后续硬件阶段只需把按键或 VAD 触发接到这三个调用，并校准
+MAX9814 的 ADC 偏置，不需要改变服务端协议。
 
 ## JSON 公共字段
 
@@ -41,9 +60,11 @@
 ## 预警与检测消息
 
 ```json
-{"type":"detection_update","device_id":"qiming_hat_001","image_seq":42,"objects":[{"class":"person","confidence":0.95,"bbox":[12,44,260,420],"direction":"left"}],"model_status":"ready","timestamp":"2026-01-01T00:00:00Z"}
-{"type":"obstacle_alert","direction":"front","object":"person","confidence":0.95,"vibration":"both","voice_text":"前方有行人","cooldown_ms":2000,"timestamp":"2026-01-01T00:00:00Z"}
+{"type":"detection_update","device_id":"qiming_hat_001","image_seq":42,"objects":[{"class":"person","confidence":0.95,"bbox":[12,44,260,420],"direction":"left","track_id":7,"approach":{"track_id":7,"growth_rate":0.12,"positive_growth_frames":2,"approaching":true,"urgent_candidate":false,"level_hint":"APPROACH","spatial":{"area_ratio":0.31,"image_band":"near_candidate","focus_region":true}}}],"tracker":"botsort","model_status":"ready","timestamp":"2026-01-01T00:00:00Z"}
+{"type":"obstacle_alert","device_id":"qiming_hat_001","direction":"front","object":"person","confidence":0.95,"vibration":"both","voice_text":"前方有行人，请注意","alert_state":"URGENT","track_id":7,"approach_reason":"central_target_area_increasing","timestamp":"2026-01-01T00:00:00Z"}
 ```
+
+检测结果中的 `track_id`、`approach` 和 `tracker` 是新增的观测字段，原有类别、置信度、框坐标和方向字段保留。自动预警只有在连续帧满足接近趋势时才产生：`APPROACH` 使用方向振动，`URGENT` 使用双侧振动并发送 LU6288 语音；目标消失或趋势停止后发送 `vibration: "stop"` 的清除事件。图像区域和面积变化仅用于演示规则，不代表真实物理距离或碰撞时间。
 
 ## 语音消息
 

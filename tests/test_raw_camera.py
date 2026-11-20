@@ -1,5 +1,5 @@
 import asyncio
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from types import SimpleNamespace
 
 import cv2
@@ -17,6 +17,7 @@ from backend.raw_camera import (DEFAULT_DEVICE_ID, FRAME_BYTES, MAX_JPEG_BYTES, 
 from backend.services import Runtime, runtime
 from backend.tablet import router as tablet_router
 from backend.tts_protocol import speech_command
+from backend.vision import AlertController, ApproachDetector, TrackerAdapter
 
 RAW = np.tile(np.arange(320, dtype=np.uint16) % 256, (240, 1)).astype(np.uint8).tobytes()
 COMPRESSED = cv2.imencode('.jpg', np.frombuffer(RAW, np.uint8).reshape(240, 320),
@@ -33,6 +34,10 @@ def camera_client(tmp_path, monkeypatch):
     monkeypatch.setattr(runtime, "locations", {})
     monkeypatch.setattr(runtime, "motor_monitor_leases", {})
     monkeypatch.setattr(runtime, "speech_enabled", True)
+    monkeypatch.setattr(runtime, "tracker", TrackerAdapter())
+    monkeypatch.setattr(runtime, "approach_detector", ApproachDetector())
+    monkeypatch.setattr(runtime, "alert_controller", AlertController())
+    monkeypatch.setattr(runtime, "alert_frame_index", defaultdict(int))
     monkeypatch.setattr(RawCameraConnection, "SPEECH_SECONDS_PER_CHARACTER", 0)
     monkeypatch.setattr(RawCameraConnection, "SPEECH_GAP_SECONDS", 0)
     monkeypatch.setattr(camera_frames, "_frames", OrderedDict())
@@ -265,7 +270,7 @@ def test_hardware_speech_waits_for_estimated_playback_then_two_seconds():
     assert connection._speech_delay("左侧有行人") == 4.0
 
 
-def test_gray_frames_run_through_detector_and_trigger_directional_motors(camera_client, monkeypatch):
+def test_gray_frames_run_through_detector_and_trigger_trend_alerts(camera_client, monkeypatch):
     client, _ = camera_client
 
     class DeterministicModel:
@@ -274,10 +279,20 @@ def test_gray_frames_run_through_detector_and_trigger_directional_motors(camera_
 
         def predict(self, image, **kwargs):
             assert image.shape == (240, 320, 3)
-            x1, x2 = [(10, 60), (130, 190), (260, 310)][self.index]
+            boxes = [
+                (120, 60, 160, 120),
+                (100, 40, 180, 160),
+                (80, 20, 200, 200),
+                (60, 0, 220, 230),
+                (40, 0, 240, 240),
+                (30, 0, 250, 240),
+                (20, 0, 260, 240),
+            ]
+            x1, y1, x2, y2 = boxes[self.index]
             self.index += 1
-            box = SimpleNamespace(xyxy=np.array([[x1, 20, x2, 200]]),
-                                  conf=np.array([0.95]), cls=np.array([0]))
+            box = SimpleNamespace(xyxy=np.array([[x1, y1, x2, y2]]),
+                                  conf=np.array([0.95]), cls=np.array([0]),
+                                  id=np.array([1]))
             return [SimpleNamespace(boxes=[box])]
 
     monkeypatch.setattr(runtime, "model", DeterministicModel())
@@ -289,14 +304,20 @@ def test_gray_frames_run_through_detector_and_trigger_directional_motors(camera_
     worker = client.portal.start_task_soon(runtime.detect_loop)
     try:
         with client.websocket_connect("/ws/camera?protocol=2") as ws:
-            for index, expected in enumerate([b"L", b"B", b"R"]):
+            expected_message_counts = [1, 1, 1, 2, 1, 1, 3]
+            for index, message_count in enumerate(expected_message_counts):
                 ws.send_bytes(RAW)
-                messages = [ws.receive() for _ in range(3 if index == 0 else 2)]
+                messages = [ws.receive() for _ in range(message_count)]
                 assert any(item.get("text") == "ACK" for item in messages)
-                assert any(item.get("bytes") == expected for item in messages)
-                speech = [item["bytes"] for item in messages
-                          if item.get("bytes", b"").startswith(b"T")]
-                assert speech == ([speech_command("左侧有行人")] if index == 0 else [])
+                commands = [item.get("bytes") for item in messages if item.get("bytes")]
+                if index == 3:
+                    assert b"B" in commands
+                    assert not any(item.startswith(b"T") for item in commands)
+                elif index == 6:
+                    assert b"B" in commands
+                    assert speech_command("前方有行人，请注意") in commands
+                else:
+                    assert commands == []
     finally:
         worker.cancel()
 

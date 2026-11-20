@@ -3,6 +3,7 @@ from collections import defaultdict
 import cv2, numpy as np
 from .config import settings
 from .database import db, now_iso, log_system
+from .vision import AlertController, AlertLevel, ApproachDetector, TrackerAdapter
 
 OBJECT_NAMES_ZH = {
     "person": "行人", "bicycle": "自行车", "car": "汽车", "motorcycle": "摩托车",
@@ -28,8 +29,13 @@ class Runtime:
         self.speech_announced = {}
         self.motor_monitor_leases = {}
         self.locations = {}
+        self.last_ocr = {}
         self.image_queue = asyncio.Queue(maxsize=1)
         self.speech_enabled = True
+        self.tracker = TrackerAdapter()
+        self.approach_detector = ApproachDetector()
+        self.alert_controller = AlertController()
+        self.alert_frame_index = defaultdict(int)
 
     def motor_monitor_enabled(self, device_id):
         now = time.monotonic()
@@ -68,10 +74,18 @@ class Runtime:
     async def detect_loop(self):
         while True:
             device_id, seq, raw = await self.image_queue.get()
-            result = {"type":"detection_update","device_id":device_id,"image_seq":seq,"objects":[],"model_status":"unavailable" if self.model_error else "ready","timestamp":now_iso()}
+            if seq <= 1:
+                self.tracker.reset(self.model, device_id)
+                self.approach_detector.reset(device_id)
+                self.alert_controller.reset(device_id)
+                self.alert_frame_index[device_id] = 0
+            self.alert_frame_index[device_id] += 1
+            frame_index = self.alert_frame_index[device_id]
+            result = {"type":"detection_update","device_id":device_id,"image_seq":seq,"objects":[],"model_status":"unavailable" if self.model_error or self.model is None else "ready","timestamp":now_iso()}
+            tracker_name = "simulation" if settings.simulation_mode and device_id.startswith("simulator_") else None
             if settings.simulation_mode and device_id.startswith("simulator_"):
                 result["model_status"] = "simulation"
-                result["objects"] = [{"class":"person","confidence":0.96,"bbox":[80,60,260,360],"direction":"left"}]
+                result["objects"] = [{"class":"person","confidence":0.96,"bbox":[80,60,260,360],"direction":"left","track_id":1}]
                 result["simulation"] = True
             if self.model and not (settings.simulation_mode and device_id.startswith("simulator_")):
                 try:
@@ -79,31 +93,87 @@ class Runtime:
                     if img is None: raise ValueError("invalid jpeg")
                     result["frame_width"] = int(img.shape[1])
                     result["frame_height"] = int(img.shape[0])
-                    pred = await asyncio.to_thread(self.model.predict, img, conf=settings.yolo_confidence, imgsz=768, verbose=False)
+                    pred, tracker_name = await asyncio.to_thread(
+                        self.tracker.infer,
+                        self.model,
+                        img,
+                        source_id=device_id,
+                        conf=settings.yolo_confidence,
+                        imgsz=768,
+                    )
                     names = self.model.names
                     for box in pred[0].boxes:
                         x1,y1,x2,y2 = [float(x) for x in box.xyxy[0].tolist()]
                         conf = float(box.conf[0]); cls = int(box.cls[0])
-                        result["objects"].append({"class": names[cls], "confidence": round(conf,3), "bbox":[x1,y1,x2,y2], "direction":self.direction((x1+x2)/2, img.shape[1])})
+                        track_id = None
+                        if getattr(box, "id", None) is not None:
+                            try:
+                                track_id = int(box.id[0])
+                            except (TypeError, ValueError, IndexError):
+                                track_id = None
+                        item = {"class": names[cls], "confidence": round(conf,3), "bbox":[x1,y1,x2,y2], "direction":self.direction((x1+x2)/2, img.shape[1])}
+                        if track_id is not None:
+                            item["track_id"] = track_id
+                        result["objects"].append(item)
                     result["model_status"] = "ready"
                 except Exception as e:
                     result["model_status"] = "error"; result["error"] = str(e)
+            if tracker_name:
+                result["tracker"] = tracker_name
+            if result["model_status"] in ("ready", "simulation"):
+                frame_width = result.get("frame_width", 320)
+                frame_height = result.get("frame_height", 240)
+                observations = self.approach_detector.update(
+                    device_id, result["objects"], frame_width, frame_height,
+                )
+                for observation in observations:
+                    if 0 <= observation.object_index < len(result["objects"]):
+                        result["objects"][observation.object_index]["approach"] = observation.as_dict()
+                decisions = self.alert_controller.update(
+                    device_id, observations, time.time(), frame_index,
+                )
+            else:
+                # Advance the state machine on failed/stale detections so an
+                # active alert can settle and issue a single STOP event.
+                self.approach_detector.update(device_id, [], 320, 240)
+                decisions = self.alert_controller.update(
+                    device_id, [], time.time(), frame_index,
+                )
             self.latest[device_id] = {"at":time.time(),"result":result}
             await self.broadcast(result)
-            for obj in result["objects"]:
-                key = (device_id,obj["class"],obj["direction"])
-                if time.time()-self.alert_last.get(key,0) >= 2:
-                    self.alert_last[key] = time.time()
-                    object_name = OBJECT_NAMES_ZH.get(obj['class'], str(obj['class']))
-                    text = f"{'左侧' if obj['direction']=='left' else '右侧' if obj['direction']=='right' else '前方'}有{object_name}"
-                    announced = self.speech_announced.setdefault(device_id, set())
-                    voice_text = None
-                    if self.speech_enabled and obj["class"] not in announced:
-                        announced.add(obj["class"])
-                        voice_text = text
-                    alert={"type":"obstacle_alert","device_id":device_id,"direction":obj["direction"],"object":obj["class"],"confidence":obj["confidence"],"vibration":"both" if obj["direction"]=="front" else obj["direction"],"voice_text":voice_text,"timestamp":now_iso()}
-                    await self.send_device(device_id, alert); await self.broadcast(alert)
-                    with db() as c: c.execute("INSERT INTO obstacle_logs(device_id,detected_at,object_class,direction,confidence,voice_text,created_at) VALUES(?,?,?,?,?,?,?)",(device_id,now_iso(),obj["class"],obj["direction"],obj["confidence"],text,now_iso()))
+            for decision in decisions:
+                object_name = OBJECT_NAMES_ZH.get(decision.object_class, decision.object_class)
+                side = {"left": "左侧", "right": "右侧"}.get(decision.direction, "前方")
+                text = f"{side}有{object_name}"
+                if decision.level == AlertLevel.URGENT:
+                    text += "，请注意"
+                voice_text = text if decision.level == AlertLevel.URGENT and self.speech_enabled else None
+                alert = {
+                    "type": "obstacle_alert",
+                    "device_id": device_id,
+                    "direction": decision.direction,
+                    "object": decision.object_class,
+                    "confidence": 0.0,
+                    "vibration": decision.vibration,
+                    "voice_text": voice_text,
+                    "alert_state": decision.level.value,
+                    "track_id": decision.track_id,
+                    "approach_reason": decision.reason,
+                    "timestamp": now_iso(),
+                }
+                for obj in result["objects"]:
+                    if obj.get("track_id") == decision.track_id and obj.get("class") == decision.object_class:
+                        alert["confidence"] = obj.get("confidence", 0.0)
+                        break
+                await self.send_device(device_id, alert)
+                await self.broadcast(alert)
+                if decision.level != AlertLevel.NORMAL:
+                    with db() as c:
+                        c.execute(
+                            "INSERT INTO obstacle_logs(device_id,detected_at,object_class,direction,confidence,voice_text,created_at) VALUES(?,?,?,?,?,?,?)",
+                            (device_id, now_iso(), decision.object_class, decision.direction,
+                             alert["confidence"], text, now_iso()),
+                        )
 
     async def broadcast(self, msg):
         dead=[]

@@ -42,8 +42,13 @@ local.properties
 
 # JavaScript dependencies.
 node_modules/
+.finesse/
 
 # Local firmware backups.
 /firmware/esp32s3_gray_camera/config.local.h
 /firmware/local_backups/
+
+# Downloaded software-acceptance assets and extracted model archives.
+/test_assets/
+/docs/acceptance_artifacts/
 

@@ -10,13 +10,52 @@ from .ocr import MAX_IMAGE_BYTES, OCRServiceError, recognize_text
 from .overview import overview
 from .tablet import router as tablet_router
 from .raw_camera import router as raw_camera_router
-from .camera_stream import camera_frames
+from .family import router as family_router
+from .camera_stream import camera_frames, capture_latest_frame
+from .audio_protocol import AudioProtocolError
+from .voice_session import VoiceSessionManager
+from .intent import Intent
+from .asr import ASRError, asr
 from .auth import create_captcha, create_session, register_user, require_session, revoke_session, session_username, verify_captcha
 
 app=FastAPI(title="启明智能陪护管理平台")
 app.include_router(tablet_router)
 app.include_router(raw_camera_router)
+app.include_router(family_router)
 app.add_middleware(CORSMiddleware,allow_origins=["*"],allow_methods=["*"],allow_headers=["*"])
+
+
+async def _voice_intent_handler(match, session):
+    """Execute the small, deterministic first-version voice command set."""
+    device_id = session.start.device_id
+    if match.intent is Intent.STOP:
+        return {"intent": match.intent.value, "reply": "已停止当前任务。", "request_type": "stop"}
+    if match.intent is Intent.ENV_QUERY:
+        reply, kind = await dialogue(device_id, match.text)
+        return {"intent": match.intent.value, "reply": reply, "request_type": kind}
+    if match.intent is Intent.OCR_AGAIN:
+        previous = getattr(runtime, "last_ocr", {}).get(device_id)
+        return {"intent": match.intent.value, "reply": previous or "还没有上一条识别结果。", "request_type": "ocr_again"}
+    if match.intent in (Intent.OCR_READ, Intent.CAMERA_CAPTURE):
+        # A device-scoped voice task must never silently read another device's
+        # frame.  ``helmet`` is only used by local sessions without a device id.
+        source = device_id or "helmet"
+        frame = capture_latest_frame(source, 1000, device_id=device_id or None)
+        if not frame:
+            return {"intent": match.intent.value, "reply": "帽端摄像头离线或画面已过期，请稍后再试。", "request_type": "ocr_read"}
+        if match.intent is Intent.CAMERA_CAPTURE:
+            return {"intent": match.intent.value, "reply": "已获取当前画面。", "request_type": "camera_capture", "image_seq": frame.seq}
+        try:
+            result = await recognize_text(frame.image)
+        except OCRServiceError as error:
+            return {"intent": match.intent.value, "reply": error.detail, "request_type": "ocr_read", "ocr_status": "failed"}
+        runtime.last_ocr[device_id] = result["text"]
+        return {"intent": match.intent.value, "reply": result["text"], "request_type": "ocr_read", "ocr_status": "ok", "ocr": result}
+    return {"intent": match.intent.value, "reply": "我没有听懂，请重新表达。", "request_type": "unknown"}
+
+
+voice_sessions = VoiceSessionManager(intent_handler=_voice_intent_handler,
+                                     timeout=settings.audio_session_timeout_seconds)
 
 @app.on_event("startup")
 async def startup():
@@ -28,6 +67,7 @@ async def startup():
     if "right_ratio" in saved: settings.right_ratio=float(saved["right_ratio"])
     DEFAULT_CONFIG.update(saved)
     runtime.speech_enabled = bool(DEFAULT_CONFIG.get("speech_enabled", True))
+    runtime.last_ocr = {}
     await runtime.load_model(); asyncio.create_task(runtime.detect_loop())
 
 @app.get("/")
@@ -233,6 +273,20 @@ async def simulate_voice(payload: dict):
     await runtime.broadcast(result)
     return result
 
+
+@app.post("/api/simulate/audio")
+async def simulate_audio(request: Request):
+    """Recognize a local 16kHz WAV before any ESP32 microphone is connected."""
+    data = await request.body()
+    if len(data) > 20_000_000:
+        raise HTTPException(status_code=413, detail="WAV 文件不能超过 20 MB")
+    try:
+        result = await asr.recognize_wav(data)
+    except ASRError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from None
+    return {"type": "asr_result", "text": result.text, "confidence": result.confidence,
+            "asr_status": "ok", "source": "wav"}
+
 @app.websocket("/ws/web")
 async def web_ws(ws:WebSocket):
     await ws.accept(); runtime.web_clients.add(ws)
@@ -242,6 +296,57 @@ async def web_ws(ws:WebSocket):
             if msg.get("type")=="device_command": await runtime.send_device(msg.get("device_id"),msg)
             elif msg.get("type")=="config_update": await runtime.broadcast(msg)
     except WebSocketDisconnect: runtime.web_clients.discard(ws)
+
+
+@app.websocket("/ws/audio")
+async def audio_ws(ws: WebSocket):
+    """Receive session JSON plus binary PCM, independent from camera frames."""
+    await ws.accept()
+    session_id = None
+    try:
+        while True:
+            try:
+                message = await asyncio.wait_for(
+                    ws.receive(), settings.audio_session_timeout_seconds if session_id else None
+                )
+            except asyncio.TimeoutError as error:
+                raise AudioProtocolError("音频会话超时") from error
+            if message.get("type") == "websocket.disconnect":
+                raise WebSocketDisconnect(code=message.get("code", 1000))
+            if message.get("text"):
+                try:
+                    payload = json.loads(message["text"])
+                except json.JSONDecodeError as error:
+                    raise AudioProtocolError("音频控制消息不是有效 JSON") from error
+                kind = payload.get("type")
+                if kind == "audio_start":
+                    session = voice_sessions.start(payload)
+                    session_id = session.start.session_id
+                    await ws.send_json({"type": "audio_started", "session_id": session_id,
+                                        "state": "RECORDING"})
+                elif kind == "audio_end":
+                    if payload.get("session_id") != session_id:
+                        raise AudioProtocolError("session_id 不匹配")
+                    result = await voice_sessions.finish(session_id)
+                    result.update({"type": "voice_result", "state": "COMPLETED" if result.get("asr_status") == "ok" else "LISTENING"})
+                    await ws.send_json(result)
+                    await runtime.broadcast(result)
+                    session_id = None
+                elif kind == "audio_cancel":
+                    voice_sessions.cancel(str(payload.get("session_id", session_id)))
+                    await ws.send_json({"type": "audio_cancelled", "state": "LISTENING"})
+                    session_id = None
+                else:
+                    raise AudioProtocolError("未知音频控制消息")
+            elif message.get("bytes") is not None:
+                if not session_id:
+                    raise AudioProtocolError("请先发送 audio_start")
+                voice_sessions.append(session_id, message["bytes"])
+    except AudioProtocolError as error:
+        await ws.send_json({"type": "error", "code": "BAD_AUDIO", "detail": str(error)})
+    except (WebSocketDisconnect, RuntimeError):
+        if session_id:
+            voice_sessions.cancel(session_id)
 
 @app.websocket("/ws/device")
 async def device_ws(ws:WebSocket):

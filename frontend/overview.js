@@ -93,6 +93,25 @@
     function render(data) {
       last = data;
       const devices = data.devices;
+      const latestAlert = data.recent_alerts && data.recent_alerts[0];
+      const latestName = latestAlert && (root.QimingCameraSpeech ? root.QimingCameraSpeech.objectName(latestAlert.object_class) : latestAlert.object_class);
+      const latestDirection = latestAlert ? (directions[latestAlert.direction] || '方位未知') : '';
+      const realOnline = Number(devices.real_online || 0);
+      const hook = $('overviewHook');
+      const hookDetail = $('overviewHookDetail');
+      if (hook && hookDetail) {
+        if (realOnline) {
+          hook.textContent = latestAlert ? `设备在线 · 最近发现${latestName}（${latestDirection}）` : '设备在线 · 当前没有待处理告警';
+          hookDetail.textContent = latestAlert ? `今天已记录 ${data.today_alerts.total} 次预警，先确认这条告警是否需要介入。` : '视觉链路已连通，保持实时监测即可。';
+        } else if (devices.simulation_online) {
+          hook.textContent = latestAlert ? `模拟设备在线 · 最近发现${latestName}（${latestDirection}）` : '模拟设备已上线 · 可以开始联调';
+          hookDetail.textContent = '当前数据来自软件联调，请在实时监测中切换到帽端或电脑画面。';
+        } else {
+          hook.textContent = '还没有帽端数据 · 先连接设备或启动电脑摄像头';
+          hookDetail.textContent = '收到第一帧后，这里会告诉你今天最该先看什么。';
+        }
+      }
+      if ($('overviewTimezone')) $('overviewTimezone').textContent = data.timezone || timeZone;
       $('device').textContent = devices.real_online ? '在线' : devices.seen ? '离线' : '未接入';
       $('deviceNote').textContent = devices.real_online ? `帽子设备在线 ${devices.real_online} 台` : devices.simulation_online ? `模拟设备在线 ${devices.simulation_online} 台` : '暂无帽子设备连接';
       $('alertCount').textContent = data.today_alerts.total;
@@ -101,6 +120,7 @@
       $('voiceNote').textContent = `设备交互 ${data.today_voices.real} · 软件联调 ${data.today_voices.simulation}`;
       $('model').textContent = data.mode === 'simulation' ? '模拟模式' : data.yolo.state === 'ready' ? '检测就绪' : '检测未就绪';
       $('modelNote').textContent = data.mode === 'simulation' ? '模拟设备使用模拟结果' : '实际图像检测模式';
+      if ($('navAlertCount')) $('navAlertCount').textContent = data.today_alerts.total;
       $('overviewTrend').innerHTML = trendSVG(data.trend);
       const chart = chartModel(data.trend);
       $('overviewTrendSummary').textContent = `7 天共 ${chart.total} 次预警 · 模拟设备单独标记`;

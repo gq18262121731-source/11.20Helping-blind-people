@@ -12,6 +12,7 @@
 | 电脑摄像头检测 | 浏览器采集 JPEG，后端 YOLO 检测，页面绘制检测框 |
 | 网页画面来源选择 | 支持电脑本机与帽端画面；保留所选来源，帽端离线时等待重连，不自动打开电脑摄像头 |
 | 方位判断 | 按检测框中心判断左侧、前方和右侧，不提供真实距离 |
+| 接近趋势预警 | YOLOv8n 后接 Ultralytics BoT-SORT（失败时 ByteTrack / predict 回退），按图像空间面积趋势进入 NORMAL、APPROACH、URGENT；不等同真实距离或碰撞时间 |
 | 摄像头中文播报 | 跟随所选画面来源，使用浏览器语音合成，支持物品名称翻译、合并播报、冷却和取消 |
 | 拍照识字与朗读 | 截取所选来源的当前画面，Qwen3-VL 转录文字，浏览器中文分段朗读；支持取消与重播 |
 | 环境查询 | 根据近期检测缓存回答，默认超过 15 秒的缓存不用于回答 |
@@ -22,6 +23,7 @@
 | ESP32 固件 | GC0308 320×240 RGB565 彩色采集、软件 JPEG / WS 上传，保留灰度模式；彩色显示已确认，基础 YOLO 链路已真机验证。支持 ACK / 心跳 / 重连，马达输出禁用，长期稳定性及后续马达接线待验收 |
 | 完整语音交互 | FunASR、后端 TTS 和设备音频收发尚未接通；软件联调接口接收文本 |
 | Android 平板 App | Flutter 客户端，含登录、总览、本机 / 电脑网页摄像头画面选择、当前画面识字、平板 TTS、实时检测、设备与设置；真机声音和相机需设备联调 |
+| 家属远程协助与安全监护 | V1 已接入 Flutter 家属页：设备绑定、实时帽端画面、Wi-Fi 粗略位置、在线/摄像头/麦克风状态、文字协助和访问日志；所有家属接口要求登录并按绑定权限校验 |
 
 ## 技术栈与数据流
 
@@ -33,12 +35,14 @@
 
 ```text
 电脑摄像头 ──HTTP JPEG──┐
-                      ├─→ FastAPI → YOLO → 检测缓存 / 预警 / SQLite
+                      ├─→ FastAPI → YOLO → 跟踪 → 接近趋势状态机 → 检测缓存 / 预警 / SQLite
 ESP32 摄像头 ──WS──────┘              └─→ WebSocket → 网页检测框 / 中文播报
 
 文本问题 → 环境查询：读取检测缓存
          → 普通问答：调用配置的语言模型接口
 ```
+
+家属端使用同一套后端会话。佩戴者登录平板后，在“家属远程协助”页选择“我是佩戴者，授权家属”，填写已注册的家属账号和帽端设备编号；家属登录自己的账号后即可看到已授权设备。摄像头帧仍由后端从帽端缓存转发，家属端不会直接连接 ESP32。位置展示明确标为 Wi-Fi / BeaconDB 粗略估算，无法替代 GPS。
 
 普通问答请求只发送文本，环境查询使用 YOLO 检测缓存。新增的拍照识字接口会把当前拍摄的图片发送给配置的视觉模型，用于转录文字。
 
@@ -306,6 +310,8 @@ python tools\simulator.py
 | `OPENAI_BASE_URL` | 兼容接口地址，例如 `http://127.0.0.1:11434/v1` |
 | `OPENAI_API_KEY` | 对话接口密钥；不要提交真实密钥 |
 | `OPENAI_MODEL` | 对话模型名称 |
+| `OCR_ENGINE` | 默认 `rapidocr`；兼容回退仅在 RapidOCR 无文字且配置旧视觉接口时触发 |
+| `ASR_MODEL` / `ASR_TOKENS` | sherpa-onnx SenseVoice 模型与词表路径；transducer 模型可改用 `ASR_ENCODER` 等字段 |
 | `LLM_TIMEOUT_SECONDS` | 对话请求超时；模板为 `300` 秒，未配置时代码默认为 `120` 秒 |
 | `SIMULATION_MODE` | 是否为模拟设备启用模拟检测，默认 `false` |
 | `DEVICE_TOKEN` | 预留设备令牌；当前设备 WebSocket 尚未校验，不构成有效访问保护 |
@@ -385,8 +391,18 @@ BeaconDB 对周围热点的覆盖；后端会把热点 BSSID（MAC 地址）和 
 | WebSocket | `/ws/web` | 网页结果推送与控制消息 |
 | WebSocket | `/ws/device` | 设备上线、心跳和二进制图像上传 |
 | WebSocket | `/ws/camera` | ESP32 原始 QVGA 灰度图兼容入口；新固件加 `protocol=2` 启用 ACK 和 B/S 指令 |
+| WebSocket | `/ws/audio` | 16kHz/16bit/Mono PCM 会话；`audio_start`、二进制 PCM、`audio_end` |
+| POST | `/api/simulate/audio` | 上传 WAV 文件验证 sherpa-onnx 中文 ASR（无需 ESP32） |
 
 完整接口参数可在服务启动后查看 `/docs`。协议文档包含规划内容；当前二进制实现采用 `QH` 标识的 26 字节固定头，联调时应以 `backend/main.py`、`firmware/websocket_manager.h` 和 `tools/simulator.py` 的一致实现为准。
+
+### 纯软件语音联调
+
+第一阶段不需要连接 ESP32。安装 `backend/requirements-conda.txt` 中的 RapidOCR、ONNX Runtime
+和 sherpa-onnx，并在 `.env` 配置中文 ASR 模型文件后，可用
+`python tools/audio_simulator.py sample.wav` 上传 WAV；模拟器和固件共用 `/ws/audio` 的
+PCM/QH 帧定义。语音任务按 `LISTENING → RECORDING → RECOGNIZING → PROCESSING → COMPLETED`
+状态运行，每个设备同时只处理一个会话；ASR、OCR 失败都会恢复监听，视觉检测继续独立运行。
 
 ## 测试
 
@@ -403,6 +419,14 @@ Python 测试覆盖方位判断、设备断线清理、验证码与会话、二�
 ```powershell
 node --test tests\camera_monitor.test.cjs tests\camera_speech.test.cjs tests\ocr_reader.test.cjs tests\overview.test.cjs
 ```
+
+软件阶段最终验收可由单一入口执行（自动准备依赖、下载素材和模型、运行真实 OCR/ASR、启动后端及模拟器、执行完整回归并生成报告）：
+
+```powershell
+.\tools\run_software_acceptance.ps1
+```
+
+报告输出到 `docs/SOFTWARE_ACCEPTANCE_REPORT.md`；下载的模型、素材和运行日志位于被 Git 忽略的本地目录。
 
 测试通过不等于完成摄像头、模型、Ollama 或 ESP32 的端到端验证，相关能力仍需按上面的步骤分别检查。
 
