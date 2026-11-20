@@ -17,23 +17,23 @@
     const x = index => 48 + index * (568 / Math.max(1, days.length - 1));
     const y = value => 190 - value / maximum * 154;
     let svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 226" role="img" aria-label="近七天预警趋势，按实际采集和模拟设备分别统计">' +
-      '<title>近七天预警趋势</title><text x="14" y="17" fill="#8ea9c5" font-size="12">次数</text>';
+      '<title>近七天预警趋势</title><text x="14" y="17" fill="#6c8491" font-size="12">次数</text>';
     for (let tick = 0; tick <= 4; tick++) {
       const value = tick * step, top = y(value);
-      svg += `<line x1="48" y1="${top}" x2="616" y2="${top}" stroke="#24415c" stroke-width="1"/>` +
-        `<text x="37" y="${top + 4}" text-anchor="end" fill="#8ea9c5" font-size="12">${value}</text>`;
+      svg += `<line x1="48" y1="${top}" x2="616" y2="${top}" stroke="#d6e5e7" stroke-width="1"/>` +
+        `<text x="37" y="${top + 4}" text-anchor="end" fill="#6c8491" font-size="12">${value}</text>`;
     }
     days.forEach((day, index) => {
-      svg += `<text x="${x(index)}" y="215" text-anchor="middle" fill="#8ea9c5" font-size="12">${escapeText(day.date.slice(5).replace('-', '/'))}</text>`;
+      svg += `<text x="${x(index)}" y="215" text-anchor="middle" fill="#6c8491" font-size="12">${escapeText(day.date.slice(5).replace('-', '/'))}</text>`;
     });
-    for (const [key, color, label] of [['real', '#55d6ef', '实际采集'], ['simulation', '#edbc70', '模拟设备']]) {
+    for (const [key, color, label] of [['real', '#006d73', '实际采集'], ['simulation', '#a76500', '模拟设备']]) {
       const coordinates = days.map((day, index) => `${x(index)},${y(day[key])}`).join(' ');
-      svg += `<polyline points="${coordinates}" fill="none" stroke="${color}" stroke-width="2.5"${key === 'simulation' ? ' stroke-dasharray="6 5"' : ''}/>`;
+      svg += `<polyline points="${coordinates}" fill="none" stroke="${color}" stroke-width="3"${key === 'simulation' ? ' stroke-dasharray="6 5"' : ''}/>`;
       days.forEach((day, index) => {
-        svg += `<circle cx="${x(index)}" cy="${y(day[key])}" r="4" fill="#102541" stroke="${color}" stroke-width="2"><title>${escapeText(day.date)} ${label}：${day[key]} 次</title></circle>`;
+        svg += `<circle cx="${x(index)}" cy="${y(day[key])}" r="4" fill="#edf5f6" stroke="${color}" stroke-width="2"><title>${escapeText(day.date)} ${label}：${day[key]} 次</title></circle>`;
       });
     }
-    if (!model.total) svg += '<text x="332" y="110" text-anchor="middle" fill="#8ea9c5" font-size="14">近 7 天暂无预警记录</text>';
+    if (!model.total) svg += '<text x="332" y="110" text-anchor="middle" fill="#6c8491" font-size="14">近 7 天暂无预警记录</text>';
     return svg + '</svg>';
   }
   function element(document, tag, className, text) {
