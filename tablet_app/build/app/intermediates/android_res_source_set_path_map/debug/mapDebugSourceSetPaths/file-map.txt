@@ -1,0 +1,8 @@
+com.qiminghat.qiminghat_tablet.app-debug-0 F:\学校\工坊\导盲帽子\Morning-Star\tablet_app\android\app\src\debug\res
+com.qiminghat.qiminghat_tablet.app-main-1 F:\学校\工坊\导盲帽子\Morning-Star\tablet_app\android\app\src\main\res
+com.qiminghat.qiminghat_tablet.app-pngs-2 F:\学校\工坊\导盲帽子\Morning-Star\tablet_app\build\app\generated\res\pngs\debug
+com.qiminghat.qiminghat_tablet.app-updated_navigation_xml-3 F:\学校\工坊\导盲帽子\Morning-Star\tablet_app\build\app\generated\updated_navigation_xml\debug
+com.qiminghat.qiminghat_tablet.app-packageDebugResources-4 F:\学校\工坊\导盲帽子\Morning-Star\tablet_app\build\app\intermediates\incremental\debug\packageDebugResources\merged.dir
+com.qiminghat.qiminghat_tablet.app-packageDebugResources-5 F:\学校\工坊\导盲帽子\Morning-Star\tablet_app\build\app\intermediates\incremental\debug\packageDebugResources\stripped.dir
+com.qiminghat.qiminghat_tablet.app-debug-6 F:\学校\工坊\导盲帽子\Morning-Star\tablet_app\build\app\intermediates\merged_res\debug\mergeDebugResources
+gradleHome-0 C:\Users\13010\.gradle

@@ -1,0 +1,28 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.qiminghat.qiminghat_tablet.app-mergeDebugResources-47:/values-v28/values-v28.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\13010\\.gradle\\caches\\9.5.0\\transforms\\3dd80f9640f6f4846d2cc645f192f220\\transformed\\appcompat-1.1.0\\res\\values-v28\\values-v28.xml",
+                    "from": {
+                        "startLines": "2,3,4,8",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "55,130,217,447",
+                        "endLines": "2,3,7,11",
+                        "endColumns": "74,86,12,12",
+                        "endOffsets": "125,212,442,684"
+                    },
+                    "to": {
+                        "startLines": "2,3,4,8",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "55,130,217,397",
+                        "endLines": "2,3,7,11",
+                        "endColumns": "74,86,12,12",
+                        "endOffsets": "125,212,392,584"
+                    }
+                }
+            ]
+        }
+    ]
+}

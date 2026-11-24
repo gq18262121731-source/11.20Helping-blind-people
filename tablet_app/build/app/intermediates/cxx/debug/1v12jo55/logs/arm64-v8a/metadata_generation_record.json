@@ -1,0 +1,17 @@
+[
+{
+  "message": "Start JSON generation. Platform version: 24 min SDK version: arm64-v8a",
+  "file": "D:\\tools\\flutter\\packages\\flutter_tools\\gradle\\src\\main\\scripts\\CMakeLists.txt",
+  "tag": "debug|arm64-v8a"
+},
+{
+  "message": "JSON \u0027F:\\学校\\工坊\\导盲帽子\\Morning-Star\\tablet_app\\build\\.cxx\\debug\\1v12jo55\\arm64-v8a\\android_gradle_build.json\u0027 was up-to-date",
+  "file": "D:\\tools\\flutter\\packages\\flutter_tools\\gradle\\src\\main\\scripts\\CMakeLists.txt",
+  "tag": "debug|arm64-v8a"
+},
+{
+  "message": "JSON generation completed without problems",
+  "file": "D:\\tools\\flutter\\packages\\flutter_tools\\gradle\\src\\main\\scripts\\CMakeLists.txt",
+  "tag": "debug|arm64-v8a"
+}
+]

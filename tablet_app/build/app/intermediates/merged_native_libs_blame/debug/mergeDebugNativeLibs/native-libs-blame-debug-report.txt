@@ -1,0 +1,20 @@
+lib/arm64-v8a/libdartjni.so->project :jni
+lib/armeabi-v7a/libdartjni.so->project :jni
+lib/x86/libdartjni.so->project :jni
+lib/x86_64/libdartjni.so->project :jni
+lib/arm64-v8a/libimage_processing_util_jni.so->androidx.camera:camera-core:1.6.0
+lib/arm64-v8a/libsurface_util_jni.so->androidx.camera:camera-core:1.6.0
+lib/armeabi-v7a/libimage_processing_util_jni.so->androidx.camera:camera-core:1.6.0
+lib/armeabi-v7a/libsurface_util_jni.so->androidx.camera:camera-core:1.6.0
+lib/x86/libimage_processing_util_jni.so->androidx.camera:camera-core:1.6.0
+lib/x86/libsurface_util_jni.so->androidx.camera:camera-core:1.6.0
+lib/x86_64/libimage_processing_util_jni.so->androidx.camera:camera-core:1.6.0
+lib/x86_64/libsurface_util_jni.so->androidx.camera:camera-core:1.6.0
+lib/arm64-v8a/libdatastore_shared_counter.so->androidx.datastore:datastore-core-android:1.1.7
+lib/armeabi-v7a/libdatastore_shared_counter.so->androidx.datastore:datastore-core-android:1.1.7
+lib/x86/libdatastore_shared_counter.so->androidx.datastore:datastore-core-android:1.1.7
+lib/x86_64/libdatastore_shared_counter.so->androidx.datastore:datastore-core-android:1.1.7
+lib/armeabi-v7a/libflutter.so->io.flutter:armeabi_v7a_debug:1.0.0-42d3d75a56efe1a2e9902f52dc8006099c45d937
+lib/arm64-v8a/libVkLayer_khronos_validation.so->io.flutter:arm64_v8a_debug:1.0.0-42d3d75a56efe1a2e9902f52dc8006099c45d937
+lib/arm64-v8a/libflutter.so->io.flutter:arm64_v8a_debug:1.0.0-42d3d75a56efe1a2e9902f52dc8006099c45d937
+lib/x86_64/libflutter.so->io.flutter:x86_64_debug:1.0.0-42d3d75a56efe1a2e9902f52dc8006099c45d937

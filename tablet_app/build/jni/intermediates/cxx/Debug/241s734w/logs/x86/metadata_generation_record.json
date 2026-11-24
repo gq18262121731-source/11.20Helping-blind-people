@@ -1,0 +1,62 @@
+[
+{
+  "message": "Start JSON generation. Platform version: 21 min SDK version: x86",
+  "file": "C:\\Users\\13010\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\jni-1.1.2\\src\\CMakeLists.txt",
+  "tag": "profile|x86"
+},
+{
+  "message": "rebuilding JSON C:\\Users\\13010\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\jni-1.1.2\\android\\.cxx\\Debug\\241s734w\\x86\\android_gradle_build.json due to:",
+  "file": "C:\\Users\\13010\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\jni-1.1.2\\src\\CMakeLists.txt",
+  "tag": "profile|x86"
+},
+{
+  "message": "- no fingerprint file, will remove stale configuration folder",
+  "file": "C:\\Users\\13010\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\jni-1.1.2\\src\\CMakeLists.txt",
+  "tag": "profile|x86"
+},
+{
+  "message": "removing stale contents from \u0027C:\\Users\\13010\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\jni-1.1.2\\android\\.cxx\\Debug\\241s734w\\x86\u0027",
+  "file": "C:\\Users\\13010\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\jni-1.1.2\\src\\CMakeLists.txt",
+  "tag": "profile|x86"
+},
+{
+  "message": "created folder \u0027C:\\Users\\13010\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\jni-1.1.2\\android\\.cxx\\Debug\\241s734w\\x86\u0027",
+  "file": "C:\\Users\\13010\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\jni-1.1.2\\src\\CMakeLists.txt",
+  "tag": "profile|x86"
+},
+{
+  "message": "executing cmake @echo off\n\"C:\\\\Users\\\\13010\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\cmake\\\\3.22.1\\\\bin\\\\cmake.exe\" ^\n  \"-HC:\\\\Users\\\\13010\\\\AppData\\\\Local\\\\Pub\\\\Cache\\\\hosted\\\\pub.dev\\\\jni-1.1.2\\\\src\" ^\n  \"-DCMAKE_SYSTEM_NAME\u003dAndroid\" ^\n  \"-DCMAKE_EXPORT_COMPILE_COMMANDS\u003dON\" ^\n  \"-DCMAKE_SYSTEM_VERSION\u003d21\" ^\n  \"-DANDROID_PLATFORM\u003dandroid-21\" ^\n  \"-DANDROID_ABI\u003dx86\" ^\n  \"-DCMAKE_ANDROID_ARCH_ABI\u003dx86\" ^\n  \"-DANDROID_NDK\u003dC:\\\\Users\\\\13010\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\ndk\\\\28.2.13676358\" ^\n  \"-DCMAKE_ANDROID_NDK\u003dC:\\\\Users\\\\13010\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\ndk\\\\28.2.13676358\" ^\n  \"-DCMAKE_TOOLCHAIN_FILE\u003dC:\\\\Users\\\\13010\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\ndk\\\\28.2.13676358\\\\build\\\\cmake\\\\android.toolchain.cmake\" ^\n  \"-DCMAKE_MAKE_PROGRAM\u003dC:\\\\Users\\\\13010\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\cmake\\\\3.22.1\\\\bin\\\\ninja.exe\" ^\n  \"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY\u003dR:\\\\tablet_app\\\\build\\\\jni\\\\intermediates\\\\cxx\\\\Debug\\\\241s734w\\\\obj\\\\x86\" ^\n  \"-DCMAKE_RUNTIME_OUTPUT_DIRECTORY\u003dR:\\\\tablet_app\\\\build\\\\jni\\\\intermediates\\\\cxx\\\\Debug\\\\241s734w\\\\obj\\\\x86\" ^\n  \"-DCMAKE_BUILD_TYPE\u003dDebug\" ^\n  \"-BC:\\\\Users\\\\13010\\\\AppData\\\\Local\\\\Pub\\\\Cache\\\\hosted\\\\pub.dev\\\\jni-1.1.2\\\\android\\\\.cxx\\\\Debug\\\\241s734w\\\\x86\" ^\n  -GNinja\n",
+  "file": "C:\\Users\\13010\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\jni-1.1.2\\src\\CMakeLists.txt",
+  "tag": "profile|x86"
+},
+{
+  "message": "@echo off\n\"C:\\\\Users\\\\13010\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\cmake\\\\3.22.1\\\\bin\\\\cmake.exe\" ^\n  \"-HC:\\\\Users\\\\13010\\\\AppData\\\\Local\\\\Pub\\\\Cache\\\\hosted\\\\pub.dev\\\\jni-1.1.2\\\\src\" ^\n  \"-DCMAKE_SYSTEM_NAME\u003dAndroid\" ^\n  \"-DCMAKE_EXPORT_COMPILE_COMMANDS\u003dON\" ^\n  \"-DCMAKE_SYSTEM_VERSION\u003d21\" ^\n  \"-DANDROID_PLATFORM\u003dandroid-21\" ^\n  \"-DANDROID_ABI\u003dx86\" ^\n  \"-DCMAKE_ANDROID_ARCH_ABI\u003dx86\" ^\n  \"-DANDROID_NDK\u003dC:\\\\Users\\\\13010\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\ndk\\\\28.2.13676358\" ^\n  \"-DCMAKE_ANDROID_NDK\u003dC:\\\\Users\\\\13010\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\ndk\\\\28.2.13676358\" ^\n  \"-DCMAKE_TOOLCHAIN_FILE\u003dC:\\\\Users\\\\13010\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\ndk\\\\28.2.13676358\\\\build\\\\cmake\\\\android.toolchain.cmake\" ^\n  \"-DCMAKE_MAKE_PROGRAM\u003dC:\\\\Users\\\\13010\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\cmake\\\\3.22.1\\\\bin\\\\ninja.exe\" ^\n  \"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY\u003dR:\\\\tablet_app\\\\build\\\\jni\\\\intermediates\\\\cxx\\\\Debug\\\\241s734w\\\\obj\\\\x86\" ^\n  \"-DCMAKE_RUNTIME_OUTPUT_DIRECTORY\u003dR:\\\\tablet_app\\\\build\\\\jni\\\\intermediates\\\\cxx\\\\Debug\\\\241s734w\\\\obj\\\\x86\" ^\n  \"-DCMAKE_BUILD_TYPE\u003dDebug\" ^\n  \"-BC:\\\\Users\\\\13010\\\\AppData\\\\Local\\\\Pub\\\\Cache\\\\hosted\\\\pub.dev\\\\jni-1.1.2\\\\android\\\\.cxx\\\\Debug\\\\241s734w\\\\x86\" ^\n  -GNinja\n",
+  "file": "C:\\Users\\13010\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\jni-1.1.2\\src\\CMakeLists.txt",
+  "tag": "profile|x86"
+},
+{
+  "message": "Received process result: 0",
+  "file": "C:\\Users\\13010\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\jni-1.1.2\\src\\CMakeLists.txt",
+  "tag": "profile|x86"
+},
+{
+  "message": "Exiting generation of C:\\Users\\13010\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\jni-1.1.2\\android\\.cxx\\Debug\\241s734w\\x86\\compile_commands.json.bin normally",
+  "file": "C:\\Users\\13010\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\jni-1.1.2\\src\\CMakeLists.txt",
+  "tag": "profile|x86"
+},
+{
+  "message": "done executing cmake",
+  "file": "C:\\Users\\13010\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\jni-1.1.2\\src\\CMakeLists.txt",
+  "tag": "profile|x86"
+},
+{
+  "message": "hard linked C:\\Users\\13010\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\jni-1.1.2\\android\\.cxx\\Debug\\241s734w\\x86\\compile_commands.json to C:\\Users\\13010\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\jni-1.1.2\\android\\.cxx\\tools\\profile\\x86\\compile_commands.json",
+  "file": "C:\\Users\\13010\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\jni-1.1.2\\src\\CMakeLists.txt",
+  "tag": "profile|x86"
+},
+{
+  "message": "JSON generation completed without problems",
+  "file": "C:\\Users\\13010\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\jni-1.1.2\\src\\CMakeLists.txt",
+  "tag": "profile|x86"
+}
+]

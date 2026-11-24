@@ -1,0 +1,324 @@
+{
+  "version": 1,
+  "library_version": "13195c2f5b4c52c2",
+  "generated_at": "2026-11-24T03:15:51.539037Z",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "audio": {
+    "format": "pcm_s16le",
+    "sample_rate": 16000,
+    "channels": 1,
+    "bits_per_sample": 16
+  },
+  "phrases": [
+    {
+      "phrase_id": "speech_started",
+      "text": "语音交互已启动",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/13195c2f5b4c52c2/speech_started.wav",
+      "duration_ms": 2136,
+      "byte_length": 68352,
+      "sha256": "754028608849163ad5decb68b197b1b851f8cb07a6d33a7917976089f572853e"
+    },
+    {
+      "phrase_id": "camera_speech_started",
+      "text": "物品识别语音播报已开启",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/13195c2f5b4c52c2/camera_speech_started.wav",
+      "duration_ms": 2928,
+      "byte_length": 93696,
+      "sha256": "977879fc022124edc0a6bef0c614dbbc1dd8311a389271b147fb74746608a47b"
+    },
+    {
+      "phrase_id": "tts_test",
+      "text": "语音播报测试，识别到物品后将自动播报名称。",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/13195c2f5b4c52c2/tts_test.wav",
+      "duration_ms": 4992,
+      "byte_length": 159744,
+      "sha256": "1291c4042e5a95e0cb659413c51a3f45e8f9211b71770a103131925a6e703759"
+    },
+    {
+      "phrase_id": "checking_environment",
+      "text": "正在查看前方环境",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/13195c2f5b4c52c2/checking_environment.wav",
+      "duration_ms": 2400,
+      "byte_length": 76800,
+      "sha256": "072342510a83c24aa30c8deaf5619ed82887c20306a0f1516dbe48d7731cf5ac"
+    },
+    {
+      "phrase_id": "recognizing_text",
+      "text": "正在识别文字",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/13195c2f5b4c52c2/recognizing_text.wav",
+      "duration_ms": 1944,
+      "byte_length": 62208,
+      "sha256": "139a06ade3ba447cc74cb35959e6062934be7ed38ee7e3d61f8bab9e6586a198"
+    },
+    {
+      "phrase_id": "text_recognized",
+      "text": "文字识别完成",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/13195c2f5b4c52c2/text_recognized.wav",
+      "duration_ms": 2016,
+      "byte_length": 64512,
+      "sha256": "2c517078aea8cf1590705ba6d652999d86f6995c7e5eb606fecd277195196383"
+    },
+    {
+      "phrase_id": "obstacle_left",
+      "text": "左侧发现障碍物，请注意避让",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/13195c2f5b4c52c2/obstacle_left.wav",
+      "duration_ms": 3288,
+      "byte_length": 105216,
+      "sha256": "fae36b1d713e9784bc7cbd9343c0b82d78847e8517cebdc854e5bcf0606c9a32"
+    },
+    {
+      "phrase_id": "obstacle_right",
+      "text": "右侧发现障碍物，请注意避让",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/13195c2f5b4c52c2/obstacle_right.wav",
+      "duration_ms": 3312,
+      "byte_length": 105984,
+      "sha256": "ddab3a04fa5188ea6e9ac27d1fd17ebe0b6fd1c43ea34a1b68c9817f56c22b99"
+    },
+    {
+      "phrase_id": "speech_stopped",
+      "text": "已停止语音交互",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/13195c2f5b4c52c2/speech_stopped.wav",
+      "duration_ms": 2088,
+      "byte_length": 66816,
+      "sha256": "cb637ec509a51b948bdb316317f8e1770598c22f60bfb6411233242f4063fa7e"
+    },
+    {
+      "phrase_id": "network_unavailable",
+      "text": "当前网络连接异常",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/13195c2f5b4c52c2/network_unavailable.wav",
+      "duration_ms": 2472,
+      "byte_length": 79104,
+      "sha256": "0826ba012f24d23746edd1e2b64a5442c8ec1110f3a2db5f028ac0acc34f2511"
+    },
+    {
+      "phrase_id": "dyn-af69b52e04329626ffd5ad386c2da54f",
+      "text": "前方有行人，左侧有水杯。",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/dynamic-dyn-af69b52e04329626ffd5ad386c2da54f/dyn-af69b52e04329626ffd5ad386c2da54f.wav",
+      "duration_ms": 3024,
+      "byte_length": 96768,
+      "sha256": "24ef4a74c0146b8964b433ddd56fe548a0d6f57dd5b65d97013fcc70a8a45406",
+      "cache_generated": true,
+      "generated_at": "2026-11-24T02:59:33.566046Z"
+    },
+    {
+      "phrase_id": "dyn-602af874a02bbfbed6439207fb866221",
+      "text": "注意，前方有行人，相对距离较近",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/dynamic-dyn-602af874a02bbfbed6439207fb866221/dyn-602af874a02bbfbed6439207fb866221.wav",
+      "duration_ms": 3816,
+      "byte_length": 122112,
+      "sha256": "e67bb62251f6c68d0d7a07760d5bd308b9e8823b9f9e8b48859003b7683dc738",
+      "cache_generated": true,
+      "generated_at": "2026-11-24T02:59:38.636328Z"
+    },
+    {
+      "phrase_id": "dyn-38a90ccca796e0dce50cc0fb8137446b",
+      "text": "前方有行人。",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/dynamic-dyn-38a90ccca796e0dce50cc0fb8137446b/dyn-38a90ccca796e0dce50cc0fb8137446b.wav",
+      "duration_ms": 1800,
+      "byte_length": 57600,
+      "sha256": "a30b3273025c650283fea9f073d633a70b23e3749bdc52890e3e65d849144122",
+      "cache_generated": true,
+      "generated_at": "2026-11-24T03:00:10.173818Z"
+    },
+    {
+      "phrase_id": "dyn-02b71ef0f9143ef99880c2fceaf033b6",
+      "text": "左侧有瓶子。",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/dynamic-dyn-02b71ef0f9143ef99880c2fceaf033b6/dyn-02b71ef0f9143ef99880c2fceaf033b6.wav",
+      "duration_ms": 1824,
+      "byte_length": 58368,
+      "sha256": "f3dde4353d49ae854c01f3fbdabd2e0483a221f33d91296c2f204e360714e21d",
+      "cache_generated": true,
+      "generated_at": "2026-11-24T03:00:17.535177Z"
+    },
+    {
+      "phrase_id": "dyn-fc54d6b8d349f0e3a3a1bb407ae5413b",
+      "text": "注意，前方有行人，相对距离中等距离",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/dynamic-dyn-fc54d6b8d349f0e3a3a1bb407ae5413b/dyn-fc54d6b8d349f0e3a3a1bb407ae5413b.wav",
+      "duration_ms": 4176,
+      "byte_length": 133632,
+      "sha256": "fea82813ca8d72605dc711167c44d28100e4621ec8815b0a44d7fa34670bc5c7",
+      "cache_generated": true,
+      "generated_at": "2026-11-24T03:00:36.198051Z"
+    },
+    {
+      "phrase_id": "dyn-e3008103b3d8cc1527bd56d27098bd04",
+      "text": "前方有行人，右侧有书。",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/dynamic-dyn-e3008103b3d8cc1527bd56d27098bd04/dyn-e3008103b3d8cc1527bd56d27098bd04.wav",
+      "duration_ms": 2856,
+      "byte_length": 91392,
+      "sha256": "97a23166d116fad6a95c8918c4b44e5e38e8f932eb456f824d04c9fb54cd816b",
+      "cache_generated": true,
+      "generated_at": "2026-11-24T03:01:18.705732Z"
+    },
+    {
+      "phrase_id": "dyn-c55358f78365ae51562226d60d092211",
+      "text": "上岸说系列资料：",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/dynamic-dyn-c55358f78365ae51562226d60d092211/dyn-c55358f78365ae51562226d60d092211.wav",
+      "duration_ms": 2136,
+      "byte_length": 68352,
+      "sha256": "0fddfc8eaf6acbbeb129ce901aae49e8754c3f6d17e05aa1194dc6aa30d2f955",
+      "cache_generated": true,
+      "generated_at": "2026-11-24T03:01:20.458980Z"
+    },
+    {
+      "phrase_id": "dyn-bb740c111c42738c1126343395dab5c2",
+      "text": "（衡水体大学英语四级语料字站）",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/dynamic-dyn-bb740c111c42738c1126343395dab5c2/dyn-bb740c111c42738c1126343395dab5c2.wav",
+      "duration_ms": 3504,
+      "byte_length": 112128,
+      "sha256": "a3352407fc290c1e5896037483e962ac36d45c300d48867fee8f579b5ce32934",
+      "cache_generated": true,
+      "generated_at": "2026-11-24T03:01:24.709933Z"
+    },
+    {
+      "phrase_id": "dyn-721cf107c76de3175307cc68edd7af0f",
+      "text": "（衡水体大学英语四级题源外时字站）",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/dynamic-dyn-721cf107c76de3175307cc68edd7af0f/dyn-721cf107c76de3175307cc68edd7af0f.wav",
+      "duration_ms": 3912,
+      "byte_length": 125184,
+      "sha256": "2c5929fcaf17b06398791d0ea83f168af861017cc3173ac208d87472e4f64165",
+      "cache_generated": true,
+      "generated_at": "2026-11-24T03:01:31.394447Z"
+    },
+    {
+      "phrase_id": "dyn-da46d86304d5b15711d4eaddabdcfb8e",
+      "text": "《衡水体大学英语四级大纲单请字站）",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/dynamic-dyn-da46d86304d5b15711d4eaddabdcfb8e/dyn-da46d86304d5b15711d4eaddabdcfb8e.wav",
+      "duration_ms": 4008,
+      "byte_length": 128256,
+      "sha256": "fc0c8ab0865cb060c0a1db8ce14000493383516efa9525ece8fcdf51116837a1",
+      "cache_generated": true,
+      "generated_at": "2026-11-24T03:01:37.422581Z"
+    },
+    {
+      "phrase_id": "dyn-480a25c9f7a541f58617d24ab984bfbb",
+      "text": "《十天刷完六级核心阔汇）",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/dynamic-dyn-480a25c9f7a541f58617d24ab984bfbb/dyn-480a25c9f7a541f58617d24ab984bfbb.wav",
+      "duration_ms": 2952,
+      "byte_length": 94464,
+      "sha256": "e301c0de0b75a12e3446bb98b8956f28e8e8e1bb06dbdb6221946d319cccc665",
+      "cache_generated": true,
+      "generated_at": "2026-11-24T03:01:43.102479Z"
+    },
+    {
+      "phrase_id": "dyn-898df2434a988abc9d9e0dfb58c973ec",
+      "text": "《十四天刷完考研英语核心词汇）",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/dynamic-dyn-898df2434a988abc9d9e0dfb58c973ec/dyn-898df2434a988abc9d9e0dfb58c973ec.wav",
+      "duration_ms": 3528,
+      "byte_length": 112896,
+      "sha256": "a3962709b26f6282b242331c88c96e81422d1fe5bcd844e108613fce8d10bcac",
+      "cache_generated": true,
+      "generated_at": "2026-11-24T03:01:48.759966Z"
+    },
+    {
+      "phrase_id": "dyn-0fca9789d0882f4acdf89c4c3e78a24c",
+      "text": "《考研英语题源外刊写作字帖）",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/dynamic-dyn-0fca9789d0882f4acdf89c4c3e78a24c/dyn-0fca9789d0882f4acdf89c4c3e78a24c.wav",
+      "duration_ms": 3432,
+      "byte_length": 109824,
+      "sha256": "5a9b85a2cb097da70d8646eaafce9df8b657e65107fbb9adb3033db146897f86",
+      "cache_generated": true,
+      "generated_at": "2026-11-24T03:01:54.318557Z"
+    },
+    {
+      "phrase_id": "dyn-5c3e1ea50d46e4569c0315adea7e9af4",
+      "text": "微佛扫码关注公众\n脚可获取本书配\n10",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/dynamic-dyn-5c3e1ea50d46e4569c0315adea7e9af4/dyn-5c3e1ea50d46e4569c0315adea7e9af4.wav",
+      "duration_ms": 5592,
+      "byte_length": 178944,
+      "sha256": "f0af26b294c7dd9bab4ff61643763791ae99e87016e2bb04b72edd72daf73755",
+      "cache_generated": true,
+      "generated_at": "2026-11-24T03:03:25.546999Z"
+    },
+    {
+      "phrase_id": "dyn-b8a7f85a05fa37e55da3fd740f9b0cc8",
+      "text": "学英语四级题源外刊字帖）\n学英语四级大纲单词字帖）\n六级核心词汇）\n完考研英语核心词汇）\n题源外刊写作字帖）\n原创高级语料写作字帖）\n研英语一作文模板\n研英语二作文模板\n（一）真题手译白皮书（上下册））\n（二）真题手译自皮书（上下册））",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/dynamic-dyn-b8a7f85a05fa37e55da3fd740f9b0cc8/dyn-b8a7f85a05fa37e55da3fd740f9b0cc8.wav",
+      "duration_ms": 26856,
+      "byte_length": 859392,
+      "sha256": "87c99377470a3312a5437fd12b3e42736176afa99c6af66e8986f480cf5dca00",
+      "cache_generated": true,
+      "generated_at": "2026-11-24T03:03:37.966576Z"
+    },
+    {
+      "phrase_id": "dyn-7b8d3d968742b57691130dc8f37d3db1",
+      "text": "我没有听懂，请说再读一遍、读一下文字、前面有什么或描述画面。",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/dynamic-dyn-7b8d3d968742b57691130dc8f37d3db1/dyn-7b8d3d968742b57691130dc8f37d3db1.wav",
+      "duration_ms": 6288,
+      "byte_length": 201216,
+      "sha256": "faa6714ae88c6c8132ce909513947cf6a582809dd4b937697d12fad3007a87fa",
+      "cache_generated": true,
+      "generated_at": "2026-11-24T03:05:56.225855Z"
+    },
+    {
+      "phrase_id": "dyn-22080dd31484c580a3ad7eb2365c6509",
+      "text": "根据画面识别，当前帧目标识别暂不可用。场景描述暂不可用：当前来源没有可用画面",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/dynamic-dyn-22080dd31484c580a3ad7eb2365c6509/dyn-22080dd31484c580a3ad7eb2365c6509.wav",
+      "duration_ms": 9072,
+      "byte_length": 290304,
+      "sha256": "23d5570c698d3877d8c0cca84bc2f2d0f2993427823fb6fa6d5e8275e02cc82d",
+      "cache_generated": true,
+      "generated_at": "2026-11-24T03:06:12.322685Z"
+    },
+    {
+      "phrase_id": "dyn-b77da3e281a1f7a05f8240abb05e45cf",
+      "text": "右侧有行人、手机、遥控器。",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/dynamic-dyn-b77da3e281a1f7a05f8240abb05e45cf/dyn-b77da3e281a1f7a05f8240abb05e45cf.wav",
+      "duration_ms": 3480,
+      "byte_length": 111360,
+      "sha256": "fab5358c1fc1eb41ae2f12318f2612b569ed9c4bfc97cebb3515b6312f255080",
+      "cache_generated": true,
+      "generated_at": "2026-11-24T03:15:23.724865Z"
+    },
+    {
+      "phrase_id": "dyn-b2654b0871627b853ce223b1cd182e87",
+      "text": "注意，前方有行人，距离较近",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/dynamic-dyn-b2654b0871627b853ce223b1cd182e87/dyn-b2654b0871627b853ce223b1cd182e87.wav",
+      "duration_ms": 3408,
+      "byte_length": 109056,
+      "sha256": "f51ed1aeff48c567cf289160065f2e11db1a4b1986da0d946326719c0731ab34",
+      "cache_generated": true,
+      "generated_at": "2026-11-24T03:15:36.147091Z"
+    },
+    {
+      "phrase_id": "dyn-501e5c6be2a44992c1b8e09ecd7e552e",
+      "text": "注意，右侧有笔记本电脑，相对距离较近",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "path": "revisions/dynamic-dyn-501e5c6be2a44992c1b8e09ecd7e552e/dyn-501e5c6be2a44992c1b8e09ecd7e552e.wav",
+      "duration_ms": 4464,
+      "byte_length": 142848,
+      "sha256": "5aae7690c9feffe5f3e0a988d32b43a713c174b357508a29f24d7c1ab1457871",
+      "cache_generated": true,
+      "generated_at": "2026-11-24T03:15:51.539037Z"
+    }
+  ]
+}

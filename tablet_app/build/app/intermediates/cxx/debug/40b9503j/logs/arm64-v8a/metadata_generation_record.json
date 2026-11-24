@@ -1,0 +1,57 @@
+[
+{
+  "message": "Start JSON generation. Platform version: 24 min SDK version: arm64-v8a",
+  "file": "D:\\development\\flutter\\packages\\flutter_tools\\gradle\\src\\main\\scripts\\CMakeLists.txt",
+  "tag": "debug|arm64-v8a"
+},
+{
+  "message": "rebuilding JSON D:\\工坊\\Morning-Star-main\\tablet_app\\build\\.cxx\\debug\\40b9503j\\arm64-v8a\\android_gradle_build.json due to:",
+  "file": "D:\\development\\flutter\\packages\\flutter_tools\\gradle\\src\\main\\scripts\\CMakeLists.txt",
+  "tag": "debug|arm64-v8a"
+},
+{
+  "message": "- no fingerprint file, will remove stale configuration folder",
+  "file": "D:\\development\\flutter\\packages\\flutter_tools\\gradle\\src\\main\\scripts\\CMakeLists.txt",
+  "tag": "debug|arm64-v8a"
+},
+{
+  "message": "removing stale contents from \u0027D:\\工坊\\Morning-Star-main\\tablet_app\\build\\.cxx\\debug\\40b9503j\\arm64-v8a\u0027",
+  "file": "D:\\development\\flutter\\packages\\flutter_tools\\gradle\\src\\main\\scripts\\CMakeLists.txt",
+  "tag": "debug|arm64-v8a"
+},
+{
+  "message": "created folder \u0027D:\\工坊\\Morning-Star-main\\tablet_app\\build\\.cxx\\debug\\40b9503j\\arm64-v8a\u0027",
+  "file": "D:\\development\\flutter\\packages\\flutter_tools\\gradle\\src\\main\\scripts\\CMakeLists.txt",
+  "tag": "debug|arm64-v8a"
+},
+{
+  "message": "executing cmake @echo off\n\"D:\\\\development\\\\android-sdk\\\\cmake\\\\3.22.1\\\\bin\\\\cmake.exe\" ^\n  \"-HD:\\\\development\\\\flutter\\\\packages\\\\flutter_tools\\\\gradle\\\\src\\\\main\\\\scripts\" ^\n  \"-DCMAKE_SYSTEM_NAME\u003dAndroid\" ^\n  \"-DCMAKE_EXPORT_COMPILE_COMMANDS\u003dON\" ^\n  \"-DCMAKE_SYSTEM_VERSION\u003d24\" ^\n  \"-DANDROID_PLATFORM\u003dandroid-24\" ^\n  \"-DANDROID_ABI\u003darm64-v8a\" ^\n  \"-DCMAKE_ANDROID_ARCH_ABI\u003darm64-v8a\" ^\n  \"-DANDROID_NDK\u003dD:\\\\development\\\\android-sdk\\\\ndk\\\\28.2.13676358\" ^\n  \"-DCMAKE_ANDROID_NDK\u003dD:\\\\development\\\\android-sdk\\\\ndk\\\\28.2.13676358\" ^\n  \"-DCMAKE_TOOLCHAIN_FILE\u003dD:\\\\development\\\\android-sdk\\\\ndk\\\\28.2.13676358\\\\build\\\\cmake\\\\android.toolchain.cmake\" ^\n  \"-DCMAKE_MAKE_PROGRAM\u003dD:\\\\development\\\\android-sdk\\\\cmake\\\\3.22.1\\\\bin\\\\ninja.exe\" ^\n  \"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY\u003dD:\\\\工坊\\\\Morning-Star-main\\\\tablet_app\\\\build\\\\app\\\\intermediates\\\\cxx\\\\debug\\\\40b9503j\\\\obj\\\\arm64-v8a\" ^\n  \"-DCMAKE_RUNTIME_OUTPUT_DIRECTORY\u003dD:\\\\工坊\\\\Morning-Star-main\\\\tablet_app\\\\build\\\\app\\\\intermediates\\\\cxx\\\\debug\\\\40b9503j\\\\obj\\\\arm64-v8a\" ^\n  \"-BD:\\\\工坊\\\\Morning-Star-main\\\\tablet_app\\\\build\\\\.cxx\\\\debug\\\\40b9503j\\\\arm64-v8a\" ^\n  -GNinja ^\n  -Wno-dev ^\n  --no-warn-unused-cli ^\n  \"-DCMAKE_BUILD_TYPE\u003ddebug\"\n",
+  "file": "D:\\development\\flutter\\packages\\flutter_tools\\gradle\\src\\main\\scripts\\CMakeLists.txt",
+  "tag": "debug|arm64-v8a"
+},
+{
+  "message": "@echo off\n\"D:\\\\development\\\\android-sdk\\\\cmake\\\\3.22.1\\\\bin\\\\cmake.exe\" ^\n  \"-HD:\\\\development\\\\flutter\\\\packages\\\\flutter_tools\\\\gradle\\\\src\\\\main\\\\scripts\" ^\n  \"-DCMAKE_SYSTEM_NAME\u003dAndroid\" ^\n  \"-DCMAKE_EXPORT_COMPILE_COMMANDS\u003dON\" ^\n  \"-DCMAKE_SYSTEM_VERSION\u003d24\" ^\n  \"-DANDROID_PLATFORM\u003dandroid-24\" ^\n  \"-DANDROID_ABI\u003darm64-v8a\" ^\n  \"-DCMAKE_ANDROID_ARCH_ABI\u003darm64-v8a\" ^\n  \"-DANDROID_NDK\u003dD:\\\\development\\\\android-sdk\\\\ndk\\\\28.2.13676358\" ^\n  \"-DCMAKE_ANDROID_NDK\u003dD:\\\\development\\\\android-sdk\\\\ndk\\\\28.2.13676358\" ^\n  \"-DCMAKE_TOOLCHAIN_FILE\u003dD:\\\\development\\\\android-sdk\\\\ndk\\\\28.2.13676358\\\\build\\\\cmake\\\\android.toolchain.cmake\" ^\n  \"-DCMAKE_MAKE_PROGRAM\u003dD:\\\\development\\\\android-sdk\\\\cmake\\\\3.22.1\\\\bin\\\\ninja.exe\" ^\n  \"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY\u003dD:\\\\工坊\\\\Morning-Star-main\\\\tablet_app\\\\build\\\\app\\\\intermediates\\\\cxx\\\\debug\\\\40b9503j\\\\obj\\\\arm64-v8a\" ^\n  \"-DCMAKE_RUNTIME_OUTPUT_DIRECTORY\u003dD:\\\\工坊\\\\Morning-Star-main\\\\tablet_app\\\\build\\\\app\\\\intermediates\\\\cxx\\\\debug\\\\40b9503j\\\\obj\\\\arm64-v8a\" ^\n  \"-BD:\\\\工坊\\\\Morning-Star-main\\\\tablet_app\\\\build\\\\.cxx\\\\debug\\\\40b9503j\\\\arm64-v8a\" ^\n  -GNinja ^\n  -Wno-dev ^\n  --no-warn-unused-cli ^\n  \"-DCMAKE_BUILD_TYPE\u003ddebug\"\n",
+  "file": "D:\\development\\flutter\\packages\\flutter_tools\\gradle\\src\\main\\scripts\\CMakeLists.txt",
+  "tag": "debug|arm64-v8a"
+},
+{
+  "message": "Received process result: 0",
+  "file": "D:\\development\\flutter\\packages\\flutter_tools\\gradle\\src\\main\\scripts\\CMakeLists.txt",
+  "tag": "debug|arm64-v8a"
+},
+{
+  "message": "D:\\工坊\\Morning-Star-main\\tablet_app\\build\\.cxx\\debug\\40b9503j\\arm64-v8a\\compile_commands.json.bin existed but not D:\\工坊\\Morning-Star-main\\tablet_app\\build\\.cxx\\debug\\40b9503j\\arm64-v8a\\compile_commands.json",
+  "file": "D:\\development\\flutter\\packages\\flutter_tools\\gradle\\src\\main\\scripts\\CMakeLists.txt",
+  "tag": "debug|arm64-v8a"
+},
+{
+  "message": "done executing cmake",
+  "file": "D:\\development\\flutter\\packages\\flutter_tools\\gradle\\src\\main\\scripts\\CMakeLists.txt",
+  "tag": "debug|arm64-v8a"
+},
+{
+  "message": "JSON generation completed without problems",
+  "file": "D:\\development\\flutter\\packages\\flutter_tools\\gradle\\src\\main\\scripts\\CMakeLists.txt",
+  "tag": "debug|arm64-v8a"
+}
+]

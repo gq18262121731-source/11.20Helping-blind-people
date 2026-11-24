@@ -1,0 +1,42 @@
+[
+  {
+    "date": "2026-11-23",
+    "page": "远程守护中心与 AI 地图助手",
+    "register": "product",
+    "shell": "map-first workbench",
+    "palette": "teal and amber on sage-tinted neutrals",
+    "brief": "围绕帽端设备整合共享位置、授权画面、地点搜索与步行导航；复用原控制台和家属权限，明确区分本机系统定位、GNSS 预留与模拟演示"
+  },
+  {
+    "date": "2026-11-21",
+    "page": "启明帽 Flutter 手机端全局配色",
+    "register": "product",
+    "shell": "移动端底部导航",
+    "palette": "浅灰蓝底、品牌蓝、青蓝和语义状态色",
+    "brief": "把 Flutter 客户端深色青绿主题统一为 PC 品牌浅色体系，覆盖全局主题、导航、指标图表、状态卡、表单和提示"
+  },
+  {
+    "date": "2026-11-21",
+    "page": "PC登录页人物背景融合与排版优化",
+    "register": "product",
+    "shell": "split-auth",
+    "palette": "浅蓝灰、品牌蓝与青蓝渐变光影",
+    "brief": "使用用户提供的助盲帽人物照片，去除截图边缘后镜像朝向表单，等比缩放并铺满左侧，加入文字区渐变遮罩、底部融合和移动端隐藏"
+  },
+  {
+    "date": "2026-11-21",
+    "page": "PC 登录、总览、实时监测、告警、语音、设备参数与联调",
+    "register": "product",
+    "shell": "canonical-sidebar",
+    "palette": "浅灰蓝底、科技青蓝、语义状态色",
+    "brief": "按用户明确规范延续原品牌与模块结构，统一8px圆角与8pt间距，升级面积图、记录表格、全屏预览、参数校验和联调反馈"
+  },
+  {
+    "date": "2026-11-20",
+    "page": "启明登录页与系统总览",
+    "register": "product",
+    "shell": "canonical-sidebar",
+    "palette": "浅灰蓝底、科技青蓝、浅青绿与暖橙",
+    "brief": "按新生成关键词精修登录页布局、注册状态与卡片内版权提示"
+  }
+]

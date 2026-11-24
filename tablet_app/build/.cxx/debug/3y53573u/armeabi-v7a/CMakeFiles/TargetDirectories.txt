@@ -1,0 +1,2 @@
+R:/tablet_app/build/.cxx/debug/3y53573u/armeabi-v7a/CMakeFiles/edit_cache.dir
+R:/tablet_app/build/.cxx/debug/3y53573u/armeabi-v7a/CMakeFiles/rebuild_cache.dir

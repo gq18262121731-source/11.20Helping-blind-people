@@ -1,0 +1,2 @@
+F:/学校/工坊/导盲帽子/Morning-Star/tablet_app/build/.cxx/debug/1v12jo55/armeabi-v7a/CMakeFiles/edit_cache.dir
+F:/学校/工坊/导盲帽子/Morning-Star/tablet_app/build/.cxx/debug/1v12jo55/armeabi-v7a/CMakeFiles/rebuild_cache.dir

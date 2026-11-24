@@ -1,0 +1,193 @@
+INFO:     Started server process [62176]
+INFO:     Waiting for application startup.
+xFormers not available
+xFormers not available
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8765 (Press CTRL+C to quit)
+INFO:     127.0.0.1:12765 - "WebSocket /ws/web" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:11315 - "WebSocket /ws/web" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:50405 - "WebSocket /ws/v1/guard/esp32s3_cam_001" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     connection closed
+INFO:     127.0.0.1:12680 - "WebSocket /ws/web" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:58546 - "WebSocket /ws/v1/guard/esp32s3_cam_001" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:18638 - "WebSocket /ws/v1/guard/esp32s3_cam_001" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:49933 - "WebSocket /ws/v1/guard/esp32s3_cam_001" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:44473 - "WebSocket /ws/v1/guard/esp32s3_cam_001" [accepted]
+INFO:     connection open
+ERROR:    Exception in ASGI application
+  + Exception Group Traceback (most recent call last):
+  |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\_utils.py", line 81, in collapse_excgroups
+  |     yield
+  |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\responses.py", line 274, in __call__
+  |     async with anyio.create_task_group() as task_group:
+  |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\anyio\_backends\_asyncio.py", line 799, in __aexit__
+  |     raise BaseExceptionGroup(
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 421, in run_asgi
+    |     result = await app(  # type: ignore[func-returns-value]
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 56, in __call__
+    |     return await self.app(scope, receive, send)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\fastapi\applications.py", line 1159, in __call__
+    |     await super().__call__(scope, receive, send)
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\applications.py", line 90, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    |     raise exc
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    |     await self.app(scope, receive, _send)
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\routing.py", line 680, in app
+    |     await route.handle(scope, receive, send)
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\routing.py", line 276, in handle
+    |     await self.app(scope, receive, send)
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\fastapi\routing.py", line 134, in app
+    |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\fastapi\routing.py", line 121, in app
+    |     await response(scope, receive, send)
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\responses.py", line 273, in __call__
+    |     with collapse_excgroups():
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\contextlib.py", line 158, in __exit__
+    |     self.gen.throw(typ, value, traceback)
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\_utils.py", line 87, in collapse_excgroups
+    |     raise exc
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\responses.py", line 277, in wrap
+    |     await func()
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\responses.py", line 250, in stream_response
+    |     async for chunk in self.body_iterator:
+    |   File "F:\学校\工坊\导盲帽子\Morning-Star\backend\tts_delivery.py", line 483, in stream_browser_mp3_and_cache
+    |     await asyncio.to_thread(
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\asyncio\threads.py", line 25, in to_thread
+    |     return await loop.run_in_executor(None, func_call)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\concurrent\futures\thread.py", line 58, in run
+    |     result = self.fn(*self.args, **self.kwargs)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "F:\学校\工坊\导盲帽子\Morning-Star\backend\tts_delivery.py", line 540, in _cache_generated_phrase
+    |     return self.library.register_generated_wav(
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "F:\学校\工坊\导盲帽子\Morning-Star\backend\tts_library.py", line 33, in guarded
+    |     return method(self, *args, **kwargs)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "F:\学校\工坊\导盲帽子\Morning-Star\backend\tts_library.py", line 129, in register_generated_wav
+    |     raise TtsLibraryError("generated WAV duration is outside the supported range")
+    | backend.tts_library.TtsLibraryError: generated WAV duration is outside the supported range
+    +------------------------------------
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 421, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 56, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\fastapi\applications.py", line 1159, in __call__
+    await super().__call__(scope, receive, send)
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\applications.py", line 90, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\fastapi\routing.py", line 134, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\fastapi\routing.py", line 121, in app
+    await response(scope, receive, send)
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\responses.py", line 273, in __call__
+    with collapse_excgroups():
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\_utils.py", line 87, in collapse_excgroups
+    raise exc
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\responses.py", line 277, in wrap
+    await func()
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\site-packages\starlette\responses.py", line 250, in stream_response
+    async for chunk in self.body_iterator:
+  File "F:\学校\工坊\导盲帽子\Morning-Star\backend\tts_delivery.py", line 483, in stream_browser_mp3_and_cache
+    await asyncio.to_thread(
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\asyncio\threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\13010\anaconda3\envs\torchgpu\Lib\concurrent\futures\thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "F:\学校\工坊\导盲帽子\Morning-Star\backend\tts_delivery.py", line 540, in _cache_generated_phrase
+    return self.library.register_generated_wav(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "F:\学校\工坊\导盲帽子\Morning-Star\backend\tts_library.py", line 33, in guarded
+    return method(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "F:\学校\工坊\导盲帽子\Morning-Star\backend\tts_library.py", line 129, in register_generated_wav
+    raise TtsLibraryError("generated WAV duration is outside the supported range")
+backend.tts_library.TtsLibraryError: generated WAV duration is outside the supported range
+INFO:     connection closed
+INFO:     connection closed
+INFO:     127.0.0.1:16355 - "WebSocket /ws/web" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:36588 - "WebSocket /ws/web" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:19359 - "WebSocket /ws/audio" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:18808 - "WebSocket /ws/audio" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:20640 - "WebSocket /ws/v1/guard/esp32s3_cam_001" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:55933 - "WebSocket /ws/v1/guard/esp32s3_cam_001" [accepted]
+INFO:     connection open
+ERROR conda.cli.main_run:execute(49): `conda run python -m uvicorn backend.main:app --host 0.0.0.0 --port 8765` failed. (See above for error)
