@@ -6,7 +6,7 @@
 flowchart LR
   C[ESP32-S3 CAM\n摄像头/模拟麦克风] -->|WebSocket 二进制帧| B[Python FastAPI 后端]
   B --> D[YOLO 检测任务]
-  B --> A[FunASR 识别任务]
+  B --> A[sherpa-onnx 中文 ASR]
   B --> L[对话服务\n环境查询/可配置大模型]
   B --> T[TTS 服务]
   B --> DB[(SQLite)]
@@ -26,7 +26,7 @@ flowchart LR
 | DetectionService | 解码、YOLO、方位、检测缓存 | CPU/GPU 线程池 |
 | AlertService | 置信度、优先级、连续帧、冷却 | 异步规则引擎 |
 | AudioReceiver | PCM 分帧、VAD/触发会话 | 有界音频队列 |
-| ASRService | FunASR 识别 | 独立线程池 |
+| ASRService | sherpa-onnx 中文识别（WAV/PCM 流） | 独立线程池 |
 | DialogueService | 环境查询缓存或大模型 API | 超时与降级 |
 | TTSService | 本地 TTS、缓存、优先级播放 | 语音优先级队列 |
 | WebBroadcaster | 推送前端状态和结果 | 每网页会话独立队列 |
@@ -43,8 +43,9 @@ sequenceDiagram
   participant W as Web前端
   E->>R: image 二进制帧
   R->>Y: 最新帧（旧帧可丢弃）
-  Y->>P: 类别/置信度/框坐标
-  P->>P: 方位、优先级、连续帧、冷却
+  Y->>P: 类别/置信度/框坐标/Track ID
+  P->>P: BoT-SORT（失败回退 ByteTrack/predict）
+  P->>P: 图像空间特征、面积趋势、状态机
   P-->>E: obstacle_alert + device_command
   P-->>W: detection_update + alert
   P->>DB: obstacle_logs
@@ -60,21 +61,25 @@ sequenceDiagram
   participant A as 音频接收/ASR
   participant Q as 请求分类
   participant Y as 检测缓存
-  participant L as 大模型
+  participant V as VLM 场景描述
+  participant R as 回复组织器
   participant T as TTS
-  E->>A: audio 二进制分片
-  A->>Q: FunASR 文本
-  alt 环境查询
-    Q->>Y: 读取未过期检测缓存
-  else 普通问答
-    Q->>L: 带超时的可配置 API
+  E->>A: /ws/audio：audio_start + PCM 二进制分片
+  A->>A: 16kHz/16bit/Mono 校验、环形缓冲、VAD
+  A->>Q: sherpa-onnx 中文文本
+  Q->>Y: 读取来源与帧序号匹配的 YOLO 结果
+  opt ENV_QUERY / SCENE_DESCRIBE 且有对应画面
+    Q->>V: 同帧图片
+    V-->>R: 只返回场景描述与不确定项
   end
-  Q->>T: 回复文本
-  T-->>E: voice_reply 元数据 + 音频帧
-  Q-->>E: 文本回复
+  Q->>R: 意图 + YOLO 结果 + 可选 VLM 场景描述
+  R-->>Q: 面向用户的简短回复
+  Q->>T: 按朗读目标送浏览器 TTS 或帽端队列
+  T-->>Q: 播放开始 / 完成 / 失败回执
+  Q-->>E: 回复文本和真实播放状态
 ```
 
-环境缓存超过 `DETECTION_CACHE_TTL_SECONDS` 时必须明确回复“当前无法获取可靠环境信息”，不能使用过期数据冒充实时结果。
+网页文本、软件联调和 `/ws/audio` ASR 转写统一复用 `backend/intent/intent_classifier.py`。环境任务的 YOLO 结果与 VLM 输入必须绑定到同一来源、同一帧；VLM 只补充场景语义，最终回复由回复组织器按意图生成。VLM 不可用时用当前帧 YOLO 结果降级回答并显示场景描述不可用，不得声称已看见画面。
 
 ## 5. 数据库结构
 
@@ -88,7 +93,7 @@ sequenceDiagram
 
 ## 6. 技术选型
 
-- Python 3.11、FastAPI、Uvicorn、websockets、OpenCV、Ultralytics YOLO、FunASR、SQLite、pandas/openpyxl。
+- Python 3.11、FastAPI、Uvicorn、websockets、OpenCV、Ultralytics YOLO、RapidOCR/ONNX Runtime、sherpa-onnx、SQLite、pandas/openpyxl。
 - 前端使用原生 HTML/CSS/JavaScript，避免构建链带来的 Windows 部署负担。
 - 固件使用 Arduino-ESP32 与 FreeRTOS 任务；ESP32 不运行任何 AI 推理。
 - 默认 CPU 推理；检测服务可通过配置切换 CUDA。

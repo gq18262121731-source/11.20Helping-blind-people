@@ -88,6 +88,21 @@ def test_hardware_speech_switch_updates_runtime_and_persists(tablet_client):
     assert client.put('/api/config', json={'speech_enabled': 'false'}).status_code == 422
 
 
+def test_configuration_accepts_full_confidence_range_and_validates_cooldown(tablet_client, monkeypatch):
+    client, _ = tablet_client
+    initial_confidence = settings.yolo_confidence
+    monkeypatch.setattr(settings, 'yolo_confidence', initial_confidence)
+
+    assert client.put('/api/config', json={
+        'confidence': 0, 'alert_cooldown_ms': 1}).status_code == 200
+    assert client.put('/api/config', json={
+        'confidence': 1, 'alert_cooldown_ms': 2000}).status_code == 200
+    assert client.put('/api/config', json={'confidence': 1.01}).status_code == 422
+    assert client.put('/api/config', json={'confidence': -0.01}).status_code == 422
+    assert client.put('/api/config', json={'alert_cooldown_ms': 1.5}).status_code == 422
+    assert client.put('/api/config', json={'alert_cooldown_ms': 0}).status_code == 422
+
+
 def test_motor_monitor_requires_auth_and_only_arms_hat_camera(tablet_client):
     client, headers = tablet_client
     assert client.post('/api/tablet/motor-monitor', json={

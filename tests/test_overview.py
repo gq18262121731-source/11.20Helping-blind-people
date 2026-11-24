@@ -72,6 +72,19 @@ def test_empty_statistics_and_daylight_saving_boundary(overview_db):
         dashboard.dashboard_statistics('not/a-timezone')
 
 
+def test_brand_styles_and_hat_outline_asset_have_live_routes():
+    from backend import main
+
+    client = TestClient(main.app)
+    for path in ("/brand.css", "/login-theme.css", "/overview-theme.css", "/login.js", "/assets/qiming-hat-outline.png"):
+        response = client.get(path)
+        assert response.status_code == 200
+        assert response.content
+    assert client.get("/brand.css").headers["content-type"].startswith("text/css")
+    assert client.get("/login.js").headers["cache-control"] == "no-store"
+    assert client.get("/assets/qiming-hat-outline.png").headers["content-type"] == "image/png"
+
+
 @pytest.mark.parametrize('scenario, expected', [('ready', 'available'), ('missing', 'missing'), ('offline', 'offline'), ('denied', 'error'), ('malformed', 'error')])
 def test_model_status_probe(monkeypatch, scenario, expected):
     monkeypatch.setattr(settings, 'openai_base_url', 'http://model.test/v1')

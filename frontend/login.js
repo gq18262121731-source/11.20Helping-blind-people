@@ -3,6 +3,7 @@ const loginConfig = Object.assign({apiBase: '', successUrl: '/'}, window.QIMING_
 const apiUrl = path => `${String(loginConfig.apiBase || '').replace(/\/$/, '')}${path}`;
 const $ = id => document.getElementById(id);
 const captchaIds = {login: '', register: ''};
+const captchaRequests = {login: null, register: null};
 let redirectTimer;
 
 function showError(target, message) {
@@ -18,12 +19,24 @@ function fieldError(name, message = '') {
   error.textContent = message;
 }
 
-async function refreshCaptcha(mode = 'login') {
-  const response = await fetch(apiUrl('/api/auth/captcha'), {cache: 'no-store'});
-  if (!response.ok) throw new Error('验证码加载失败，请刷新页面');
-  const data = await response.json();
-  captchaIds[mode] = data.captcha_id;
-  $(mode === 'login' ? 'captchaImage' : 'registerCaptchaImage').src = data.image;
+function refreshCaptcha(mode = 'login') {
+  if (captchaRequests[mode]) return captchaRequests[mode];
+  const image = $(mode === 'login' ? 'captchaImage' : 'registerCaptchaImage');
+  image.classList.add('is-loading');
+  image.setAttribute('aria-busy', 'true');
+  captchaRequests[mode] = fetch(apiUrl('/api/auth/captcha'), {cache: 'no-store'})
+    .then(async response => {
+      if (!response.ok) throw new Error('验证码加载失败，请重试');
+      const data = await response.json();
+      captchaIds[mode] = data.captcha_id;
+      image.src = data.image;
+    })
+    .finally(() => {
+      captchaRequests[mode] = null;
+      image.classList.remove('is-loading');
+      image.removeAttribute('aria-busy');
+    });
+  return captchaRequests[mode];
 }
 
 function setMode(mode, updateHistory = true) {
@@ -48,6 +61,15 @@ function setMode(mode, updateHistory = true) {
   showError('loginError', '');
   showError('registerError', '');
   refreshCaptcha(mode).catch(error => showError(isRegister ? 'registerError' : 'loginError', error.message));
+}
+
+function togglePassword(button, input) {
+  input.type = input.type === 'password' ? 'text' : 'password';
+  const visible = input.type === 'text';
+  button.classList.toggle('is-visible', visible);
+  button.setAttribute('aria-pressed', String(visible));
+  button.title = visible ? '隐藏密码' : '显示密码';
+  button.setAttribute('aria-label', button.title);
 }
 
 async function existingSession() {
@@ -153,18 +175,9 @@ async function register(event) {
 
 $('loginForm').addEventListener('submit', login);
 $('registerForm').addEventListener('submit', register);
-$('togglePassword').addEventListener('click', () => {
-  const visible = $('password').type === 'text';
-  $('password').type = visible ? 'password' : 'text';
-  $('togglePassword').textContent = visible ? '◉' : '◌';
-  $('togglePassword').setAttribute('aria-label', visible ? '显示密码' : '隐藏密码');
-});
+$('togglePassword').addEventListener('click', () => togglePassword($('togglePassword'), $('password')));
 document.querySelectorAll('[data-toggle-password]').forEach(button => button.addEventListener('click', () => {
-  const input = $(button.dataset.togglePassword);
-  const visible = input.type === 'text';
-  input.type = visible ? 'password' : 'text';
-  button.textContent = visible ? '◉' : '◌';
-  button.setAttribute('aria-label', visible ? '显示密码' : '隐藏密码');
+  togglePassword(button, $(button.dataset.togglePassword));
 }));
 document.querySelectorAll('[data-mode]').forEach(button => button.addEventListener('click', () => setMode(button.dataset.mode)));
 document.querySelectorAll('[data-policy]').forEach(button => button.addEventListener('click', () => {

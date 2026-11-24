@@ -1,0 +1,16 @@
+{
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "sample_rate": 16000,
+  "phrases": [
+    {"phrase_id": "speech_started", "text": "语音交互已启动"},
+    {"phrase_id": "camera_speech_started", "text": "物品识别语音播报已开启"},
+    {"phrase_id": "tts_test", "text": "语音播报测试，识别到物品后将自动播报名称。"},
+    {"phrase_id": "checking_environment", "text": "正在查看前方环境"},
+    {"phrase_id": "recognizing_text", "text": "正在识别文字"},
+    {"phrase_id": "text_recognized", "text": "文字识别完成"},
+    {"phrase_id": "obstacle_left", "text": "左侧发现障碍物，请注意避让"},
+    {"phrase_id": "obstacle_right", "text": "右侧发现障碍物，请注意避让"},
+    {"phrase_id": "speech_stopped", "text": "已停止语音交互"},
+    {"phrase_id": "network_unavailable", "text": "当前网络连接异常"}
+  ]
+}

@@ -177,3 +177,58 @@ test('OCR suspension blocks object speech and does not cancel external reading',
   h.announcer.announce(detection([item('bottle')]));
   assert.equal(h.spoken.length, 2);
 });
+
+test('depth risk alerts use a distinct phrase and suppress the generic target announcement', () => {
+  const h = setup();
+  h.announcer.announce(detection([{
+    ...item('chair', 'left'), risk: {status: 'valid', level: 'L2'}
+  }]));
+  assert.equal(h.spoken.length, 0);
+  h.announcer.announceAlert({device_id: 'local_camera', alert_state: 'L2',
+    track_id: 4, object: 'chair', direction: 'left', speech_priority: 2,
+    relative_depth: {level: 'near'}, event_id: 'event-1'});
+  assert.equal(h.spoken.length, 1);
+  assert.equal(h.spoken[0].text, '注意，左侧有椅子，距离较近');
+  h.announcer.announceAlert({device_id: 'local_camera', alert_state: 'L2',
+    track_id: 4, object: 'chair', direction: 'left', speech_priority: 2,
+    event_id: 'event-2'});
+  assert.equal(h.spoken.length, 1);
+});
+
+test('disabled risk alerts leave ordinary object speech available and honor the speech gate', () => {
+  const h = setup();
+  h.announcer.announce(detection([{
+    ...item('chair'), risk: {status: 'valid', level: 'L2'}
+  }], {risk_alerts_enabled: false}));
+  assert.equal(h.spoken.length, 1);
+  assert.equal(h.spoken[0].text, '前方有椅子。');
+  h.finish();
+  h.announcer.announceAlert({device_id: 'local_camera', alert_state: 'L3',
+    track_id: 4, object: 'person', speech_enabled: false});
+  assert.equal(h.spoken.length, 1);
+});
+
+test('L3 depth alert interrupts ordinary speech and ignores its late callback', () => {
+  const h = setup();
+  h.announcer.announce(detection([item('cup')]));
+  const ordinary = h.spoken[0];
+  h.announcer.announceAlert({device_id: 'local_camera', alert_state: 'L3',
+    track_id: 9, object: 'person', direction: 'front', speech_priority: 3});
+  assert.equal(h.spoken.length, 2);
+  assert.equal(h.spoken[1].text, '危险，前方有行人，请注意');
+  assert.ok(h.synth.cancelCount > 0);
+  ordinary.onend();
+  assert.equal(h.announcer.activeAlertPriority, 3);
+});
+
+test('queued depth warnings keep the highest pending level', () => {
+  const h = setup();
+  h.announcer.announce(detection([item('cup')]));
+  h.announcer.announceAlert({device_id: 'local_camera', alert_state: 'L1',
+    track_id: 1, object: 'chair', direction: 'left', relative_depth: {level: 'far'}});
+  h.announcer.announceAlert({device_id: 'local_camera', alert_state: 'L2',
+    track_id: 2, object: 'person', direction: 'front'});
+  h.finish();
+  assert.equal(h.spoken.length, 2);
+  assert.equal(h.spoken[1].text, '注意，前方有行人，距离较近');
+});

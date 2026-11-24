@@ -28,14 +28,17 @@
 
   class Announcer {
     constructor(options = {}) {
-      this.synth = options.synth === undefined ? root.speechSynthesis : options.synth;
-      this.Utterance = options.Utterance || root.SpeechSynthesisUtterance;
+      this.synth = options.synth;
+      this.Utterance = options.Utterance;
+      this.tts = options.tts || root.QimingEdgeTts;
+      this.allowInjectedSynth = Boolean(this.synth && this.Utterance);
+      this.fetch = options.fetch || root.fetch?.bind(root);
       this.now = options.now || Date.now;
       this.schedule = options.schedule || root.setTimeout.bind(root);
       this.unschedule = options.unschedule || root.clearTimeout.bind(root);
       this.status = options.onStatus || (() => {});
       this.sourceId = options.sourceId || 'local_camera';
-      this.supported = Boolean(this.synth && this.Utterance);
+      this.supported = Boolean(this.tts?.supported || this.allowInjectedSynth);
       this.enabled = true;
       this.allowed = true;
       this.active = false;
@@ -51,6 +54,9 @@
       this.generation = 0;
       this.timer = null;
       this.utterance = null;
+      this.pendingAlert = null;
+      this.activeAlertPriority = 0;
+      this.alertLastSpoken = new Map();
     }
 
     configure(config) {
@@ -68,20 +74,34 @@
       this.reset();
       if (!this.enabled) this.status('识别播报已关闭');
       else if (!this.allowed) this.status('系统语音播报已关闭');
-      else if (this.active) this.say('物品识别语音播报已开启');
+      else if (this.active && !this.isHardwareSource()) this.say('物品识别语音播报已开启');
+      else if (this.active && this.isHardwareSource()) this.status('帽端目标播报由电脑 Edge TTS 下发');
       else this.status('识别播报已开启，启动摄像头后自动播报');
     }
 
     start() {
       this.reset();
       this.active = true;
-      if (this.enabled && this.allowed) this.say('物品识别语音播报已开启');
+      if (this.enabled && this.allowed && !this.isHardwareSource()) this.say('物品识别语音播报已开启');
+      else if (this.isHardwareSource()) this.status('帽端目标播报由电脑 Edge TTS 下发');
     }
 
     stop() {
+      this.cancelDevice();
       this.active = false;
       this.reset();
       this.status(this.enabled ? '摄像头未启动，识别播报已暂停' : '识别播报已关闭');
+    }
+
+    cancelDevice() {
+      if (!this.isHardwareSource() || !this.fetch) return;
+      const token = root.sessionStorage?.getItem('qh_token') || root.localStorage?.getItem('qh_token');
+      this.fetch('/api/tts/stop', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', ...(token ? {Authorization: 'Bearer ' + token} : {})},
+        body: JSON.stringify({device_id: this.sourceId}),
+        keepalive: true,
+      }).catch(() => {});
     }
 
     suspend() {
@@ -103,13 +123,46 @@
       this.busy = false;
       this.failed = false;
       this.utterance = null;
-      if (this.supported && !this.suspended) this.synth.cancel();
+      this.pendingAlert = null;
+      this.activeAlertPriority = 0;
+      this.alertLastSpoken.clear();
+      this.tts?.cancel?.();
+      if (this.allowInjectedSynth && !this.suspended) this.synth.cancel();
+    }
+
+    cancelCurrent() {
+      this.generation += 1;
+      if (this.timer !== null) this.unschedule(this.timer);
+      this.timer = null;
+      this.busy = false;
+      this.utterance = null;
+      this.activeAlertPriority = 0;
+      this.tts?.cancel?.();
+      if (this.allowInjectedSynth && !this.suspended) this.synth.cancel();
     }
 
     test() {
       this.reset();
       if (!this.allowed) return this.status('系统语音播报已关闭');
+      if (this.isHardwareSource() && this.fetch) {
+        const token = root.sessionStorage?.getItem('qh_token') || root.localStorage?.getItem('qh_token');
+        this.status('正在通过 Edge TTS 向帽端发送测试语音…');
+        this.fetch('/api/tts/speak', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json', ...(token ? {Authorization: 'Bearer ' + token} : {})},
+          body: JSON.stringify({device_id: this.sourceId, text: '语音播报测试，识别到物品后将自动播报名称。', priority: 1}),
+        }).then(async response => {
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.detail || '帽端测试语音发送失败');
+          this.status(data.status === 'synthesizing' ? 'Edge TTS 正在合成，完成后发送到帽端' : '测试语音已加入帽端队列');
+        }).catch(error => this.status('帽端测试语音失败：' + error.message));
+        return;
+      }
       this.say('语音播报测试，识别到物品后将自动播报名称。');
+    }
+
+    isHardwareSource() {
+      return Boolean(this.sourceId && this.sourceId !== 'local_camera' && !String(this.sourceId).startsWith('simulator_'));
     }
 
     setSource(sourceId) {
@@ -125,9 +178,17 @@
         this.latest = [];
         return;
       }
+      if (this.isHardwareSource() && this.tts?.supported) {
+        this.latest = [];
+        return;
+      }
       const unique = new Map();
       for (const item of result.objects || []) {
         if (!Number.isFinite(item.confidence) || item.confidence < this.threshold) continue;
+        // A depth-aware L1/L2/L3 event has its own priority speech channel.
+        // Do not also emit the generic object phrase for the same target.
+        if (result.risk_alerts_enabled !== false &&
+            ['L1', 'L2', 'L3'].includes(String(item.risk?.level || ''))) continue;
         const name = objectName(item.class);
         if (!name) continue;
         const direction = directions[item.direction] ? item.direction : 'front';
@@ -157,9 +218,101 @@
       this.say(text, items);
     }
 
+    announceAlert(alert) {
+      if (!this.active || !this.enabled || !this.allowed || this.failed || this.suspended) return;
+      if (alert.speech_enabled === false) return;
+      if (alert.device_id !== this.sourceId) return;
+      if (this.isHardwareSource() && this.tts?.supported) return;
+      const level = String(alert.alert_state || alert.level || 'L0');
+      if (!['L1', 'L2', 'L3'].includes(level)) return;
+      const priority = Number.isFinite(Number(alert.speech_priority))
+        ? Number(alert.speech_priority) : ({L1: 1, L2: 2, L3: 3}[level] || 1);
+      const key = `${alert.device_id}:${alert.track_id ?? 'unknown'}:${level}:${alert.object || 'object'}:${alert.direction || 'front'}`;
+      const now = this.now();
+      const previous = this.alertLastSpoken.get(key);
+      if (previous != null && now - previous < (level === 'L3' ? 1000 : this.gap)) return;
+      const text = String(alert.voice_text || this.alertText(alert));
+      if (!text) return;
+      if (this.busy) {
+        if (priority >= 3) {
+          this.pendingAlert = null;
+          this.latest = [];
+          this.cancelCurrent();
+        } else if (this.activeAlertPriority > priority) {
+          return;
+        } else if (!this.pendingAlert || priority > this.pendingAlert.priority) {
+          this.pendingAlert = {alert, priority};
+          return;
+        } else return;
+      }
+      this.alertLastSpoken.set(key, now);
+      if (this.alertLastSpoken.size > 256) {
+        for (const [oldKey, at] of this.alertLastSpoken) {
+          if (now - at > 60000) this.alertLastSpoken.delete(oldKey);
+        }
+      }
+      this.activeAlertPriority = priority;
+      this.say(text, [{key}]);
+    }
+
+    alertText(alert) {
+      const side = directions[alert.direction] || '前方';
+      const name = objectName(alert.object || alert.class || '障碍物');
+      const level = String(alert.alert_state || alert.level || 'L1');
+      if (level === 'L3') return `危险，${side}有${name}，请注意`;
+      if (level === 'L2') return `注意，${side}有${name}，距离较近`;
+      const depth = alert.relative_depth?.level;
+      const depthText = {near: '较近', mid: '中等距离', far: '较远'}[depth];
+      return `注意，${side}有${name}${depthText ? '，相对距离' + depthText : ''}`;
+    }
+
     say(text, items = []) {
       if (this.suspended) return;
-      if (!this.supported) return this.status('当前浏览器不支持语音播报，请使用 Chrome 或 Edge');
+      if (this.tts?.supported) {
+        const generation = this.generation;
+        this.busy = true;
+        this.utterance = {cancel: () => this.tts.cancel?.()};
+        this.tts.speak(text, {
+          onstart: () => {
+            if (generation !== this.generation) return;
+            const started = this.now();
+            for (const item of items) this.lastSpoken.set(item.key, started);
+            this.status('正在使用 Edge TTS 播报：' + text);
+          },
+          onend: () => {
+            if (generation !== this.generation) return;
+            this.busy = false;
+            this.utterance = null;
+            this.lastEnded = this.now();
+            this.status('上次播报：' + text);
+            const pending = this.pendingAlert;
+            this.pendingAlert = null;
+            this.activeAlertPriority = 0;
+            if (pending) this.announceAlert(pending.alert);
+            else this.drain();
+          },
+          onerror: () => {
+            if (generation !== this.generation) return;
+            this.busy = false;
+            this.utterance = null;
+            this.failed = true;
+            this.status('Edge TTS 播报失败，请检查后端连接');
+          },
+        }).catch(() => {
+          if (generation !== this.generation) return;
+          this.busy = false;
+          this.utterance = null;
+          this.failed = true;
+          this.status('Edge TTS 播报失败，请检查后端连接');
+        });
+        return;
+      }
+      if (!this.allowInjectedSynth) {
+        return this.status(this.supported
+          ? 'Edge TTS 音频服务不可用，请检查电脑后端'
+          : '当前环境不支持语音播报');
+      }
+      if (!this.supported) return this.status('当前环境不支持语音播报');
       const generation = this.generation;
       const utterance = new this.Utterance(text);
       utterance.lang = 'zh-CN';
@@ -184,7 +337,11 @@
         this.utterance = null;
         this.lastEnded = this.now();
         this.status('上次播报：' + text);
-        this.drain();
+        const pending = this.pendingAlert;
+        this.pendingAlert = null;
+        this.activeAlertPriority = 0;
+        if (pending) this.announceAlert(pending.alert);
+        else this.drain();
       };
       utterance.onerror = event => {
         if (generation !== this.generation) return;

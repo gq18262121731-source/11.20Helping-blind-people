@@ -14,7 +14,9 @@ Future<void> main() async {
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
+      statusBarIconBrightness: Brightness.dark,
+      systemNavigationBarColor: pageBackground,
+      systemNavigationBarIconBrightness: Brightness.dark,
     ),
   );
   final preferences = await SharedPreferences.getInstance();
@@ -30,39 +32,128 @@ class QimingTablet extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp(
     title: '启明帽 · 平板端',
     debugShowCheckedModeBanner: false,
+    themeMode: ThemeMode.light,
     theme: ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: const Color(0xff0b1525),
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: pageBackground,
       colorScheme: ColorScheme.fromSeed(
         seedColor: accent,
-        brightness: Brightness.dark,
+        brightness: Brightness.light,
         primary: accent,
+        onPrimary: Colors.white,
+        secondary: aqua,
+        onSecondary: ink,
         surface: surface,
+        onSurface: ink,
+        error: errorInk,
+        onError: Colors.white,
+      ),
+      textTheme: ThemeData.light().textTheme.apply(
+        bodyColor: ink,
+        displayColor: ink,
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: pageBackground,
+        foregroundColor: ink,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+          systemNavigationBarColor: surface,
+          systemNavigationBarIconBrightness: Brightness.dark,
+        ),
+      ),
+      iconTheme: const IconThemeData(color: muted),
+      dividerTheme: const DividerThemeData(color: lineColor, thickness: 1),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) =>
+              states.contains(WidgetState.selected) ? Colors.white : muted,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (states) =>
+              states.contains(WidgetState.selected) ? accent : idleSurface,
+        ),
+      ),
+      sliderTheme: const SliderThemeData(
+        activeTrackColor: accent,
+        thumbColor: accent,
+        inactiveTrackColor: lineColor,
+        valueIndicatorColor: accent,
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: surface,
+        surfaceTintColor: Colors.transparent,
+        indicatorColor: accent,
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => TextStyle(
+            color: states.contains(WidgetState.selected) ? accent : muted,
+            fontSize: 12,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w600
+                : FontWeight.w400,
+          ),
+        ),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            color: states.contains(WidgetState.selected) ? Colors.white : muted,
+          ),
+        ),
+      ),
+      navigationRailTheme: const NavigationRailThemeData(
+        backgroundColor: pageBackground,
+        indicatorColor: accent,
+        selectedIconTheme: IconThemeData(color: Colors.white),
+        unselectedIconTheme: IconThemeData(color: muted),
+        selectedLabelTextStyle: TextStyle(
+          color: accent,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelTextStyle: TextStyle(color: muted),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xff0c192b),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        fillColor: const Color(0xfff8fafc),
+        labelStyle: const TextStyle(color: bodyText),
+        hintStyle: const TextStyle(color: muted),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: lineColor),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: lineColor),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: accent, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: errorInk),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: errorInk, width: 1.5),
+        ),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 18,
-          vertical: 18,
+          horizontal: 16,
+          vertical: 16,
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size(64, 52),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          minimumSize: const Size(64, 48),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size(64, 50),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          minimumSize: const Size(64, 48),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
     ),

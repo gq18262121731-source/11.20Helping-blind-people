@@ -1,8 +1,26 @@
 import 'package:material_ui/material_ui.dart';
 
-const accent = Color(0xff67e0cf);
-const muted = Color(0xffa5b5c8);
-const surface = Color(0xff142338);
+const accent = Color(0xff1677ff);
+const muted = Color(0xff667085);
+const surface = Color(0xffffffff);
+const pageBackground = Color(0xfff5f7fa);
+const ink = Color(0xff1d2129);
+const bodyText = Color(0xff4e5969);
+const lineColor = Color(0xffdce3ec);
+const blueSoft = Color(0xffeaf2ff);
+const aqua = Color(0xff36cfc9);
+const aquaStrong = Color(0xff0f817b);
+const chartAqua = Color(0xff129b95);
+const warningColor = Color(0xffff7d00);
+const warningInk = Color(0xff985200);
+const warningSurface = Color(0xfffff3e3);
+const successInk = Color(0xff206b43);
+const successSurface = Color(0xffe8f6ed);
+const errorInk = Color(0xffad3129);
+const errorSurface = Color(0xfffdeceb);
+const idleInk = Color(0xff596579);
+const idleSurface = Color(0xfff0f2f5);
+const chartGrid = Color(0xffe5eaf1);
 
 class Panel extends StatelessWidget {
   const Panel({
@@ -16,9 +34,10 @@ class Panel extends StatelessWidget {
   Widget build(BuildContext context) => Material(
     color: surface,
     shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(20),
-      side: const BorderSide(color: Color(0xff27394e)),
+      borderRadius: BorderRadius.circular(8),
+      side: const BorderSide(color: lineColor),
     ),
+    elevation: 0,
     child: Padding(padding: padding, child: child),
   );
 }
@@ -35,15 +54,18 @@ class Notice extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xff302e25),
-        borderRadius: BorderRadius.circular(12),
+        color: warningSurface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xffffd2ab)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.info_outline, color: Color(0xffffd68a)),
+          const Icon(Icons.info_outline, color: warningInk),
           const SizedBox(width: 12),
-          Expanded(child: Text(text, style: const TextStyle(height: 1.6))),
+          Expanded(
+            child: Text(text, style: const TextStyle(color: ink, height: 1.6)),
+          ),
           ?action,
         ],
       ),
@@ -69,11 +91,12 @@ class PageHeading extends StatelessWidget {
           children: [
             Text(
               title,
-              style: Theme.of(context).textTheme.headlineMedium
-                  ?.copyWith(fontWeight: FontWeight.w700),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
-            Text(subtitle, style: const TextStyle(color: muted)),
+            Text(subtitle, style: const TextStyle(color: bodyText)),
           ],
         ),
         ?action,
@@ -90,12 +113,12 @@ class StatusPill extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     decoration: BoxDecoration(
-      color: (good ? accent : muted).withValues(alpha: .12),
-      borderRadius: BorderRadius.circular(30),
+      color: good ? successSurface : idleSurface,
+      borderRadius: BorderRadius.circular(999),
     ),
     child: Text(
       text,
-      style: TextStyle(color: good ? accent : muted, fontSize: 13),
+      style: TextStyle(color: good ? successInk : idleInk, fontSize: 13),
     ),
   );
 }

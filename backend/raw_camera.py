@@ -14,7 +14,7 @@ from .camera_stream import SOURCE_ID, camera_frames
 from .database import db, now_iso
 from .geolocation import GeolocationError, locate_wifi
 from .services import runtime
-from .tts_protocol import speech_command
+from .tts_delivery import tts_delivery
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -71,45 +71,32 @@ def validated_camera_jpeg(data: bytes) -> bytes:
 class RawCameraConnection:
     """Adapt the runtime's JSON commands without putting inference in receive()."""
 
-    SPEECH_SECONDS_PER_CHARACTER = 0.4
-    SPEECH_GAP_SECONDS = 2.0
-
-    def __init__(self, ws, protocol=1):
+    def __init__(self, ws, protocol=1, device_id=DEFAULT_DEVICE_ID):
         self.ws = ws
         self.protocol = protocol
+        self.device_id = device_id
         self._send_lock = asyncio.Lock()
-        self._speech_queue = asyncio.Queue(maxsize=32)
-        self._speech_task = None
 
-    def _queue_speech(self, text):
-        try:
-            speech_command(text)
-            self._speech_queue.put_nowait(text)
-        except (ValueError, UnicodeEncodeError):
-            logger.warning("Skipping invalid LU6288 speech alert")
-            return
-        except asyncio.QueueFull:
-            logger.warning("Skipping LU6288 speech alert because the queue is full")
-            return
-        if self._speech_task is None or self._speech_task.done():
-            self._speech_task = asyncio.create_task(self._speech_loop())
+    def _queue_speech(self, text, priority=1):
+        result = tts_delivery.queue_text(self.device_id, text, priority=priority)
+        if result.get("status") not in ("queued", "synthesizing"):
+            logger.info("Hat TTS phrase not queued for %s: %s", self.device_id, result.get("status"))
+            return False
+        return True
 
-    def _speech_delay(self, text):
-        playback_time = max(0.5, len(text) * self.SPEECH_SECONDS_PER_CHARACTER)
-        return playback_time + self.SPEECH_GAP_SECONDS
+    def speak_text(self, text):
+        if self.protocol != 2 or not runtime.speech_enabled:
+            return False
+        return self._queue_speech(text, priority=2)
 
-    async def _speech_loop(self):
-        while True:
-            text = await self._speech_queue.get()
-            try:
-                if runtime.speech_enabled:
-                    await self._send(commands=(speech_command(text),))
-                    await asyncio.sleep(self._speech_delay(text))
-            except (OSError, RuntimeError, asyncio.TimeoutError):
-                logger.info("LU6288 speech queue stopped after a transport error")
-                return
-            finally:
-                self._speech_queue.task_done()
+    def queue_family_message(self, text):
+        """Reserve every text chunk before accepting a remote announcement."""
+        if self.protocol != 2 or not runtime.speech_enabled or not isinstance(text, str):
+            return False
+        text = text.strip()
+        if not text or len(text) > 500:
+            return False
+        return self._queue_speech(text, priority=1)
 
     async def _send(self, *, commands=(), text=None):
         async def write():
@@ -129,6 +116,9 @@ class RawCameraConnection:
             direction = message.get("direction")
         elif message.get("type") == "device_command" and message.get("command") == "stop":
             direction = "stop"
+        elif message.get("type") == "family_message":
+            self.queue_family_message(message.get("body", ""))
+            return
         else:
             return
         commands.extend({"left": (b"L",), "right": (b"R",)}.get(direction, ()))
@@ -141,18 +131,12 @@ class RawCameraConnection:
             await self._send(commands=commands)
         if (message.get("type") == "obstacle_alert" and message.get("voice_text")
                 and runtime.speech_enabled):
-            self._queue_speech(message["voice_text"])
+            self._queue_speech(message["voice_text"], priority=0)
 
     async def text(self, message):
         await self._send(text=message)
 
     async def close(self):
-        if self._speech_task and not self._speech_task.done():
-            self._speech_task.cancel()
-            try:
-                await self._speech_task
-            except asyncio.CancelledError:
-                pass
         await asyncio.wait_for(self.ws.close(code=1012), timeout=2.0)
 
 
@@ -171,7 +155,7 @@ async def raw_camera_socket(ws: WebSocket):
         await ws.close(code=1008)
         return
     await ws.accept()
-    connection = RawCameraConnection(ws, int(version))
+    connection = RawCameraConnection(ws, int(version), device_id=device_id)
     runtime.devices[device_id] = connection
     runtime.speech_announced.pop(device_id, None)
     seq = 0
@@ -239,12 +223,7 @@ async def raw_camera_socket(ws: WebSocket):
                 break
             seq += 1
             camera_frames.publish(device_id, seq, jpeg)
-            if runtime.image_queue.full():
-                try:
-                    runtime.image_queue.get_nowait()
-                except asyncio.QueueEmpty:
-                    pass
-            runtime.image_queue.put_nowait((device_id, seq, jpeg))
+            runtime.enqueue_frame(device_id, seq, jpeg)
             if connection.protocol == 2:
                 # Receipt/queue ACK only; preview must not wait for inference or SQLite.
                 await connection.text("ACK")

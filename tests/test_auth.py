@@ -1,4 +1,5 @@
 import base64
+from xml.etree import ElementTree
 
 import pytest
 from fastapi import HTTPException
@@ -30,4 +31,21 @@ def test_captcha_is_one_time_and_session_round_trip(auth_db):
         ).fetchone()["password_hash"]
     assert stored != "Care123"
     assert auth.session_username(auth.create_session("careuser", "Care123", False)["token"]) == "careuser"
+
+
+def test_captcha_svg_has_clear_type_and_a_subtle_dotted_background():
+    captcha = auth.create_captcha()
+    svg = ElementTree.fromstring(base64.b64decode(captcha["image"].split(",", 1)[1]))
+    namespace = {"svg": "http://www.w3.org/2000/svg"}
+    letters = svg.findall(".//svg:text", namespace)
+    group = svg.find("svg:g", namespace)
+    backgrounds = svg.findall("svg:rect", namespace)
+
+    assert len(letters) == 5
+    assert "".join(letter.text for letter in letters) == auth._captchas[captcha["captcha_id"]][0]
+    assert group.attrib["font-family"] == "Consolas, Courier New, monospace"
+    assert backgrounds[0].attrib["fill"] == "#F3F6FB"
+    assert backgrounds[1].attrib["fill"] == "url(#captcha-dots)"
+    assert svg.find(".//svg:pattern/svg:circle", namespace) is not None
+    assert svg.find(".//svg:path", namespace) is None
 

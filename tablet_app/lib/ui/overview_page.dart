@@ -159,7 +159,7 @@ class _OverviewPageState extends State<OverviewPage>
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '绿色：真实预警　橙色：模拟预警',
+                    '蓝色：真实预警　青绿色：模拟预警',
                     style: TextStyle(color: muted, fontSize: 12),
                   ),
                 ],
@@ -241,6 +241,7 @@ class _OverviewPageState extends State<OverviewPage>
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
+                  color: accent,
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
                 ),
@@ -346,14 +347,11 @@ class _TrendPainter extends CustomPainter {
       canvas.drawLine(
         Offset(38, y),
         Offset(size.width - 12, y),
-        Paint()..color = const Color(0xff2c3b4d),
+        Paint()..color = chartGrid,
       );
       _text(canvas, '${(scale * i / 4).round()}', Offset(0, y - 5));
     }
-    for (final entry in {
-      'real': accent,
-      'simulation': const Color(0xffeeb66a),
-    }.entries) {
+    for (final entry in {'real': accent, 'simulation': chartAqua}.entries) {
       final path = Path();
       for (var i = 0; i < points.length; i++) {
         final x = 40 + width * i / math.max(1, points.length - 1);

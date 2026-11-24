@@ -58,6 +58,7 @@ class QimingApi {
     CancelToken? cancelToken,
     Duration? timeout,
     ResponseType? responseType,
+    String? contentType,
   }) async {
     try {
       final response = await dio.request<dynamic>(
@@ -68,9 +69,9 @@ class QimingApi {
           method: method,
           receiveTimeout: timeout,
           responseType: responseType,
-          contentType: data is Uint8List
-              ? 'image/jpeg'
-              : Headers.jsonContentType,
+          contentType:
+              contentType ??
+              (data is Uint8List ? 'image/jpeg' : Headers.jsonContentType),
           headers: authenticated && token != null
               ? {'Authorization': 'Bearer $token'}
               : null,
@@ -108,6 +109,7 @@ class QimingApi {
     bool authenticated = true,
     CancelToken? cancelToken,
     Duration? timeout,
+    String? contentType,
   }) async {
     final value = await request(
       path,
@@ -116,6 +118,7 @@ class QimingApi {
       authenticated: authenticated,
       cancelToken: cancelToken,
       timeout: timeout,
+      contentType: contentType,
     );
     if (value is! Map) throw const ApiFailure('接口格式不正确，请检查服务器地址和后端版本。');
     return Map<String, dynamic>.from(value);

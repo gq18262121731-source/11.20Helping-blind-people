@@ -1,8 +1,11 @@
 plugins {
     id("com.android.application")
+    id("org.jetbrains.kotlin.android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+val isPreviewBuild = providers.gradleProperty("qimingPreview").orNull == "true"
 
 android {
     namespace = "com.qiminghat.qiminghat_tablet"
@@ -16,7 +19,12 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.qiminghat.qiminghat_tablet"
+        applicationId = if (isPreviewBuild) {
+            "com.qiminghat.qiminghat_tablet.preview"
+        } else {
+            "com.qiminghat.qiminghat_tablet"
+        }
+        manifestPlaceholders["appLabel"] = if (isPreviewBuild) "启明帽·预览版" else "启明帽"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

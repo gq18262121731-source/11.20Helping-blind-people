@@ -1,0 +1,38 @@
+vision:
+  detector:
+    enabled: true
+    imgsz: 768
+    precision: fp16
+  depth:
+    enabled: true
+    model: depth_anything_v2_small
+    update_fps: 1
+    precision: fp16
+    input_size: 518
+    max_age_ms: 500
+  tracking:
+    enabled: true
+    type: botsort
+    fallback: bytetrack_then_predict
+spatial:
+  enabled: true
+  zones:
+    left: 0.35
+    right: 0.65
+risk:
+  enabled: true
+  distance_weight: 0.30
+  path_weight: 0.30
+  motion_weight: 0.20
+  ttc_weight: 0.20
+alert:
+  enabled: true
+  duplicate_suppression: true
+  priority_escalation: true
+  tts_enabled: true
+  vibration_enabled: true
+runtime:
+  latest_frame_only: true
+  depth_result_max_age_ms: 500
+  gpu_fallback: true
+  performance_monitor: true

@@ -1,7 +1,7 @@
 (function (root) {
   'use strict';
 
-  function drawDetections(canvas, media, data) {
+  function drawDetections(canvas, media, data, selectedIndex = -1) {
     const box = media.getBoundingClientRect();
     const dpr = root.devicePixelRatio || 1;
     canvas.width = Math.max(1, Math.round(box.width * dpr));
@@ -17,18 +17,44 @@
     const ox = (box.width - fw * scale) / 2, oy = (box.height - fh * scale) / 2;
     ctx.lineWidth = 2;
     ctx.font = '13px "Microsoft YaHei",sans-serif';
-    for (const object of data.objects || []) {
-      if (!Array.isArray(object.bbox) || object.bbox.length !== 4) continue;
+    (data.objects || []).forEach((object, index) => {
+      if (!Array.isArray(object.bbox) || object.bbox.length !== 4) return;
       const [x1, y1, x2, y2] = object.bbox;
       const x = ox + x1 * scale, y = oy + y1 * scale;
-      ctx.strokeStyle = object.direction === 'left' ? '#63f3d0' : object.direction === 'right' ? '#ffcf67' : '#58c7ff';
+      ctx.strokeStyle = index === selectedIndex ? '#ffcf67' : object.direction === 'left' ? '#63f3d0' : object.direction === 'right' ? '#ffcf67' : '#58c7ff';
+      ctx.lineWidth = index === selectedIndex ? 4 : 2;
       ctx.strokeRect(x, y, (x2 - x1) * scale, (y2 - y1) * scale);
-      const label = `${object.class} ${(object.confidence * 100).toFixed(0)}% · ${object.direction === 'front' ? '前方' : object.direction === 'left' ? '左侧' : '右侧'}`;
+      const label = `${root.QimingCameraSpeech?.objectName?.(object.class) || object.class} ${(object.confidence * 100).toFixed(0)}% · ${object.direction === 'front' ? '前方' : object.direction === 'left' ? '左侧' : '右侧'}`;
       ctx.fillStyle = ctx.strokeStyle;
       ctx.fillRect(x, Math.max(0, y - 22), ctx.measureText(label).width + 12, 22);
       ctx.fillStyle = '#061321';
       ctx.fillText(label, x + 6, Math.max(15, y - 6));
-    }
+    });
+  }
+
+  function drawDepthHighlight(canvas, media, data, object) {
+    const box = media.getBoundingClientRect();
+    const dpr = root.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.round(box.width * dpr));
+    canvas.height = Math.max(1, Math.round(box.height * dpr));
+    canvas.style.width = box.width + 'px';
+    canvas.style.height = box.height + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, box.width, box.height);
+    if (!object || !Array.isArray(object.bbox) || object.bbox.length !== 4) return;
+    const fw = data.frame_width || media.naturalWidth || 1;
+    const fh = data.frame_height || media.naturalHeight || 1;
+    const scale = Math.min(box.width / fw, box.height / fh);
+    const ox = (box.width - fw * scale) / 2, oy = (box.height - fh * scale) / 2;
+    const [x1, y1, x2, y2] = object.bbox;
+    const x = ox + x1 * scale, y = oy + y1 * scale;
+    const width = (x2 - x1) * scale, height = (y2 - y1) * scale;
+    ctx.fillStyle = 'rgba(255, 207, 103, .28)';
+    ctx.fillRect(x, y, width, height);
+    ctx.strokeStyle = '#ffcf67';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x, y, width, height);
   }
 
   class Monitor {
@@ -58,6 +84,10 @@
       this.localStream = this.timer = this.request = this.upload = null;
       this.locationTimer = null;
       this.motorMonitorTimer = null;
+      this.spatialAlerts = [];
+      this.viewMode = 'original';
+      this.spatialResult = null;
+      this.selectedTargetKey = null;
       this.motorMonitorActive = false;
       this.motorMonitorDevice = null;
       this.frameBlob = this.frameUrl = this.frameSeq = this.lastDetection = null;
@@ -65,14 +95,93 @@
       this.video = this.get('cameraVideo');
       this.image = this.get('cameraRemote');
       this.canvas = this.document.createElement('canvas');
+      this.compareImage = this.get('compareOriginal');
+      this.compareDepthImage = this.get('compareDepth');
+      this.compareDetectionCanvas = this.get('compareDetectionOverlay');
+      this.compareDepthCanvas = this.get('compareDepthOverlay');
+      this.compareFrameReady = null;
+      this.compareDetectionCanvas.onclick = event => this.selectCompareTargetAt(event);
+      for (const [mode, id] of [['original', 'cameraModeOriginal'], ['detection', 'cameraModeDetection'], ['compare', 'cameraModeCompare']]) {
+        const button = this.get(id);
+        if (button) button.onclick = () => this.setViewMode(mode);
+      }
       this.renderSources();
+      this.setViewMode(this.viewMode);
       this.get('cameraStart').onclick = () => this.start();
       this.get('cameraStop').onclick = () => this.stop();
       this.get('cameraSelect').onchange = () => this.selectCamera(this.get('cameraSelect').value);
+      const ocrStart = this.get('ocrCameraStart');
+      const ocrStop = this.get('ocrCameraStop');
+      if (ocrStart) ocrStart.onclick = () => this.start();
+      if (ocrStop) ocrStop.onclick = () => this.stop();
+      const ocrSource = this.get('ocrCameraSelect');
+      if (ocrSource) ocrSource.onchange = () => this.selectCamera(ocrSource.value);
+      this.fullscreenButton = this.get('cameraFullscreen');
+      this.fullscreenChanged = () => {
+        this.updateFullscreenButton();
+        if (this.active()) this.renderDetection();
+        if (this.spatialResult) this.renderCompare();
+      };
+      if (this.fullscreenButton) this.fullscreenButton.onclick = () => this.toggleFullscreen();
+      this.document.addEventListener?.('fullscreenchange', this.fullscreenChanged);
+      this.document.addEventListener?.('webkitfullscreenchange', this.fullscreenChanged);
+      root.addEventListener?.('resize', this.fullscreenChanged);
+      this.updateFullscreenButton();
     }
 
     isLocal() { return this.sourceId === 'local_camera'; }
     active() { return this.running && this.hasFrame; }
+    targetKey(object, index) { return object?.track_id == null ? `index:${index}` : `track:${object.track_id}`; }
+    objectLabel(object) { return root.QimingCameraSpeech?.objectName?.(object?.class) || object?.class || '目标'; }
+    setViewMode(mode) {
+      if (!['original', 'detection', 'compare'].includes(mode)) return;
+      this.viewMode = mode;
+      for (const [key, id] of [['original', 'cameraModeOriginal'], ['detection', 'cameraModeDetection'], ['compare', 'cameraModeCompare']]) {
+        const button = this.get(id);
+        if (!button) continue;
+        button.classList.toggle('is-active', mode === key);
+        button.setAttribute?.('aria-pressed', String(mode === key));
+      }
+      const stage = this.get('cameraStage');
+      const compare = this.get('cameraCompare');
+      const overlay = this.get('cameraOverlay');
+      if (stage) stage.hidden = mode === 'compare';
+      if (compare) compare.hidden = mode !== 'compare';
+      if (overlay) overlay.hidden = mode !== 'detection';
+      if (mode === 'detection') this.renderDetection();
+      if (mode === 'compare') this.renderCompare();
+    }
+    fullscreenElement() { return this.document.fullscreenElement || this.document.webkitFullscreenElement; }
+    updateFullscreenButton() {
+      if (!this.fullscreenButton) return;
+      const stage = this.get('cameraStage');
+      const fullscreen = this.fullscreenElement() === stage;
+      const supported = this.document.fullscreenEnabled !== false && Boolean(stage.requestFullscreen || stage.webkitRequestFullscreen);
+      this.fullscreenButton.disabled = !supported || (!fullscreen && !this.active());
+      this.fullscreenButton.textContent = fullscreen ? '退出全屏' : '全屏查看';
+      this.fullscreenButton.title = !supported ? '当前浏览器不支持全屏查看' : fullscreen ? '退出全屏查看，可按 Esc 返回' : this.active() ? '全屏查看当前摄像头画面' : '启动摄像头并等待画面后可全屏查看';
+      this.fullscreenButton.setAttribute?.('aria-pressed', String(fullscreen));
+      this.fullscreenButton.setAttribute?.('aria-label', fullscreen ? '退出摄像头全屏' : '全屏查看摄像头画面');
+    }
+    async toggleFullscreen() {
+      const stage = this.get('cameraStage');
+      const fullscreen = this.fullscreenElement() === stage;
+      const action = fullscreen
+        ? this.document.exitFullscreen || this.document.webkitExitFullscreen
+        : stage.requestFullscreen || stage.webkitRequestFullscreen;
+      if (!action || (!fullscreen && !this.active())) {
+        this.status(action ? '请先启动摄像头并等待画面，再使用全屏查看' : '当前浏览器不支持全屏查看');
+        return;
+      }
+      if (this.fullscreenButton) this.fullscreenButton.disabled = true;
+      try {
+        await action.call(fullscreen ? this.document : stage);
+      } catch (_) {
+        this.status('全屏切换失败，请直接点击全屏按钮重试');
+      } finally {
+        this.updateFullscreenButton();
+      }
+    }
     label() {
       if (this.isLocal()) return '电脑本机摄像头';
       if (this.sourceId === this.defaultDeviceId) return 'ESP32 帽端摄像头';
@@ -123,7 +232,15 @@
       }).catch(() => {});
     }
     event(name) { if (root.dispatchEvent) root.dispatchEvent(new root.Event(name)); }
-    status(text) { this.get('cameraStatus').textContent = text; }
+    status(text) {
+      const statuses = ['cameraStatus', 'ocrCameraStatus'].map(id => this.get(id)).filter(Boolean);
+      for (const status of statuses) {
+        status.textContent = text;
+        status.classList.toggle('page-status-ready', /正在查看|已连接|已启用|画面可查看/.test(text));
+        status.classList.toggle('page-status-error', /失败|不可用|权限被拒绝|连接已失效|黑帧/.test(text));
+        status.classList.toggle('page-status-warm', /正在读取|等待|超时/.test(text));
+      }
+    }
     clearOverlay() { const canvas = this.get('cameraOverlay'); canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height); }
 
     option(value, label) {
@@ -134,26 +251,36 @@
     }
 
     renderSources() {
-      const select = this.get('cameraSelect');
       const remote = this.sources.filter(item => item.source_id !== 'local_camera');
       // Keep the configured hat selectable even before it connects or the list loads.
       if (!remote.some(item => item.source_id === this.defaultDeviceId)) {
         remote.unshift({source_id: this.defaultDeviceId, online: false});
       }
-      const choices = [this.option('local:', '默认电脑摄像头'),
-        ...remote.map(item => this.option('remote:' + item.source_id,
-          (item.source_id === this.defaultDeviceId ? 'ESP32 帽端摄像头' : item.label) +
-          (item.online ? '（有画面）' : '（等待画面）'))),
-        ...this.localDevices.map((device, index) => this.option('local:' + device.deviceId, device.label || `电脑摄像头 ${index + 1}`))];
-      if (!this.isLocal() && !remote.some(item => item.source_id === this.sourceId)) {
-        choices.push(this.option('remote:' + this.sourceId, this.label() + '（等待连接）'));
+      const selects = ['cameraSelect', 'ocrCameraSelect'].map(id => this.get(id)).filter(Boolean);
+      for (const select of selects) {
+        const choices = [this.option('local:', '默认电脑摄像头'),
+          ...remote.map(item => this.option('remote:' + item.source_id,
+            (item.source_id === this.defaultDeviceId ? 'ESP32 帽端摄像头' : item.label) +
+            (item.online ? '（有画面）' : '（等待画面）'))),
+          ...this.localDevices.map((device, index) => this.option('local:' + device.deviceId, device.label || `电脑摄像头 ${index + 1}`))];
+        if (!this.isLocal() && !remote.some(item => item.source_id === this.sourceId)) {
+          choices.push(this.option('remote:' + this.sourceId, this.label() + '（等待连接）'));
+        }
+        if (this.localDeviceId && !this.localDevices.some(device => device.deviceId === this.localDeviceId)) {
+          choices.push(this.option('local:' + this.localDeviceId, '原选电脑摄像头（暂不可用）'));
+        }
+        select.replaceChildren(...choices);
+        select.value = this.isLocal() ? 'local:' + this.localDeviceId : 'remote:' + this.sourceId;
       }
-      if (this.localDeviceId && !this.localDevices.some(device => device.deviceId === this.localDeviceId)) {
-        choices.push(this.option('local:' + this.localDeviceId, '原选电脑摄像头（暂不可用）'));
+      const startLabel = this.isLocal() ? '启动电脑摄像头' : '启动帽端监测';
+      for (const id of ['cameraStart', 'ocrCameraStart']) {
+        const button = this.get(id);
+        if (button) { button.textContent = startLabel; button.disabled = this.running; }
       }
-      select.replaceChildren(...choices);
-      select.value = this.isLocal() ? 'local:' + this.localDeviceId : 'remote:' + this.sourceId;
-      this.get('cameraStart').textContent = this.isLocal() ? '启动电脑摄像头' : '启动帽端监测';
+      for (const id of ['cameraStop', 'ocrCameraStop']) {
+        const button = this.get(id);
+        if (button) button.disabled = !this.running;
+      }
       this.get('cameraPlaceholderTitle').textContent = this.label();
       this.get('cameraPlaceholderHint').textContent = this.isLocal()
         ? '点击“启动电脑摄像头”后显示画面' : '启动监测后查看帽端画面并启用位置震动提醒';
@@ -223,10 +350,11 @@
       this.defaultChosen = this.explicitSource = true;
       try { this.storage.setItem('qh_camera_source', this.sourceId); } catch (_) {}
       this.running = true;
+      this.renderSources();
+      this.get('cameraStage').classList.toggle('is-waiting', true);
       this.speech.setSource(this.sourceId);
       this.speech.start();
-      this.get('cameraStart').disabled = true;
-      this.get('cameraStop').disabled = false;
+      this.renderSources();
       if (!this.isLocal()) {
         this.status('正在读取：' + this.label());
         this.pollLocation();
@@ -266,19 +394,32 @@
       const stage = this.get('cameraStage');
       stage.classList.toggle('active', active);
       stage.classList.toggle('remote', remote);
+      stage.classList.toggle('is-waiting', this.running && !active);
       this.image.hidden = !active || !remote;
+      this.updateFullscreenButton();
     }
 
     clearFrame() {
       this.hasFrame = false;
       this.frameBlob = this.frameSeq = null;
       this.lastDetection = null;
+      this.spatialResult = null;
+      this.selectedTargetKey = null;
       this.get('objects').replaceChildren();
       this.get('detection').textContent = '等待所选来源的检测结果';
       this.image.onload = this.image.onerror = null;
       this.image.removeAttribute('src');
       if (this.frameUrl) this.url.revokeObjectURL(this.frameUrl);
       this.frameUrl = null;
+      for (const id of ['compareOriginal', 'compareDepth']) {
+        const image = this.get(id);
+        image.onload = image.onerror = null;
+        image.removeAttribute('src');
+        image.hidden = true;
+      }
+      this.compareFrameReady = null;
+      this.renderCompareTargets();
+      this.renderCompare();
       this.stage(false, !this.isLocal());
       this.clearOverlay();
     }
@@ -303,8 +444,7 @@
       for (const id of ['objects', 'monitorObjects']) this.get(id).replaceChildren();
       this.get('monitorText').textContent = '';
       this.get('detection').textContent = '等待所选来源的检测结果';
-      this.get('cameraStart').disabled = false;
-      this.get('cameraStop').disabled = true;
+      this.renderSources();
       this.get('cameraLive').textContent = '● 未连接';
       this.get('cameraFps').textContent = '等待画面';
       this.speech.stop();
@@ -432,7 +572,233 @@
       if (!this.running || result.device_id !== this.sourceId || (this.isLocal() && result.image_seq < this.minimumSeq)) return;
       this.lastDetection = result;
       this.renderDetection();
+      this.renderPerformance(result.performance);
       if (this.hasFrame) this.speech.announce(result);
+    }
+
+    renderPerformance(performance) {
+      if (!performance) return;
+      const status = this.get('performanceStatus');
+      const meta = this.get('performanceMeta');
+      if (status) {
+        const yolo = Number(performance.yolo_fps || 0).toFixed(1);
+        const depth = Number(performance.depth_fps || 0).toFixed(1);
+        status.textContent = `YOLO ${yolo} FPS · 深度 ${depth} FPS`;
+      }
+      if (meta) {
+        const gpu = performance.gpu_name || 'CPU / GPU 未启用';
+        const memory = performance.gpu_memory_used_mb == null ? '显存不可用' : `${performance.gpu_memory_used_mb}/${performance.gpu_memory_total_mb || '—'} MB`;
+        const latency = performance.frame_latency_ms == null ? '帧延迟 —' : `帧延迟 ${performance.frame_latency_ms.toFixed(0)} ms`;
+        meta.textContent = `${gpu} · ${memory} · 风险 ${performance.risk_ms} ms · ${latency}`;
+      }
+    }
+
+    handleSpatial(result) {
+      if (!this.running || result.device_id !== this.sourceId) return;
+      if (this.isLocal() && result.image_seq < this.minimumSeq) return;
+      if (this.spatialResult && Number(result.image_seq) < Number(this.spatialResult.image_seq)) return;
+      const sameFrame = result.depth_status === 'ready' && result.image_seq != null && result.depth_frame_id != null &&
+        String(result.image_seq) === String(result.depth_frame_id);
+      const previousSelection = this.selectedTargetKey;
+      this.spatialResult = sameFrame && result.raw_frame_preview && result.depth_preview ? result : null;
+      const compareImage = this.get('compareOriginal');
+      const compareDepth = this.get('compareDepth');
+      if (this.spatialResult) {
+        const sequence = String(result.image_seq);
+        this.compareFrameReady = {sequence, original: false, depth: false};
+        compareImage.onload = () => this.compareImageLoaded(sequence, 'original');
+        compareDepth.onload = () => this.compareImageLoaded(sequence, 'depth');
+        compareImage.onerror = compareDepth.onerror = () => {
+          if (this.compareFrameReady?.sequence !== sequence) return;
+          this.compareFrameReady = null;
+          compareImage.hidden = compareDepth.hidden = true;
+          this.renderCompare();
+        };
+        compareImage.src = `data:image/jpeg;base64,${result.raw_frame_preview}`;
+        compareDepth.src = `data:image/jpeg;base64,${result.depth_preview}`;
+        compareImage.hidden = compareDepth.hidden = true;
+        this.selectedTargetKey = previousSelection?.startsWith('track:') && (result.objects || []).some((object, index) =>
+          this.targetKey(object, index) === previousSelection) ? previousSelection : null;
+      } else {
+        for (const image of [compareImage, compareDepth]) {
+          image.onload = image.onerror = null;
+          image.removeAttribute('src');
+          image.hidden = true;
+        }
+        this.compareFrameReady = null;
+        this.selectedTargetKey = null;
+      }
+      const depth = this.get('depthStatus');
+      const meta = this.get('depthMeta');
+      const preview = this.get('depthPreview');
+      if (depth) depth.textContent = result.depth_status === 'ready' ? '已获取同帧深度' : '深度结果不可用';
+      if (meta) meta.textContent = result.depth_status === 'ready'
+        ? `Depth Anything V2 Small · 相对深度 · 帧 ${result.depth_frame_id}`
+        : 'Depth Anything V2 Small · 相对深度';
+      if (preview) {
+        if (result.depth_preview) {
+          preview.src = `data:image/jpeg;base64,${result.depth_preview}`;
+          preview.hidden = false;
+        } else preview.hidden = true;
+      }
+      this.renderPerformance(result.performance);
+      const objects = result.objects || [];
+      const highest = objects.map(item => item.risk).filter(Boolean).sort((a, b) => (b.score || 0) - (a.score || 0))[0];
+      const risk = this.get('riskStatus');
+      const reasons = this.get('riskReasons');
+      if (risk) risk.textContent = highest?.level ? `${highest.level} · ${highest.score == null ? '等待质量足够数据' : highest.score.toFixed(2)}` : 'L0 · 无高风险目标';
+      if (reasons) reasons.textContent = highest?.reasons?.join('、') || '风险评分仅用于系统内部决策';
+      const list = this.get('spatialObjects');
+      if (list) {
+        list.replaceChildren(...(objects.length ? objects.map(item => {
+          const node = this.document.createElement('span');
+          node.className = 'spatial-object';
+          const depthLevel = item.depth?.level || '未测';
+          const approach = item.approach?.approaching ? '接近' : '稳定';
+          node.textContent = `#${item.track_id ?? '—'} ${item.class} · ${item.direction || 'front'} · ${depthLevel} · ${approach}`;
+          return node;
+        }) : [Object.assign(this.document.createElement('span'), {className: 'muted', textContent: '当前帧没有可用空间对象'})]));
+      }
+      this.renderCompareTargets();
+      this.renderCompare();
+    }
+
+    selectSpatialTarget(index) {
+      const objects = this.spatialResult?.objects || [];
+      if (!Number.isInteger(index) || index < 0 || index >= objects.length) return;
+      this.selectedTargetKey = this.targetKey(objects[index], index);
+      this.renderCompareTargets();
+      this.renderCompare();
+    }
+
+    compareImageLoaded(sequence, pane) {
+      if (!this.compareFrameReady || this.compareFrameReady.sequence !== sequence) return;
+      this.compareFrameReady[pane] = true;
+      if (this.compareFrameReady.original && this.compareFrameReady.depth) {
+        this.compareImage.hidden = this.compareDepthImage.hidden = false;
+        this.renderCompare();
+      }
+    }
+
+    selectCompareTargetAt(event) {
+      const data = this.spatialResult;
+      if (!data || !this.compareFrameReady?.original || !this.compareFrameReady?.depth) return;
+      const objects = data.objects || [];
+      const rect = this.compareDetectionCanvas.getBoundingClientRect();
+      const width = Number(data.frame_width) || this.compareImage.naturalWidth || 1;
+      const height = Number(data.frame_height) || this.compareImage.naturalHeight || 1;
+      const scale = Math.min(rect.width / width, rect.height / height);
+      const x = (event.clientX - rect.left - (rect.width - width * scale) / 2) / scale;
+      const y = (event.clientY - rect.top - (rect.height - height * scale) / 2) / scale;
+      const hits = objects.map((object, index) => ({object, index}))
+        .filter(({object}) => Array.isArray(object.bbox) && object.bbox.length === 4 &&
+          x >= object.bbox[0] && x <= object.bbox[2] && y >= object.bbox[1] && y <= object.bbox[3])
+        .sort((a, b) => {
+          const area = item => (item.object.bbox[2] - item.object.bbox[0]) * (item.object.bbox[3] - item.object.bbox[1]);
+          return area(a) - area(b);
+        });
+      if (hits.length) this.selectSpatialTarget(hits[0].index);
+    }
+
+    renderCompareTargets() {
+      const container = this.get('compareTargets');
+      if (!container) return;
+      const objects = this.spatialResult?.objects || [];
+      if (!objects.length) {
+        container.replaceChildren(Object.assign(this.document.createElement('span'), {
+          className: 'muted', textContent: '同帧检测结果中没有可选目标'
+        }));
+        return;
+      }
+      container.replaceChildren(...objects.map((object, index) => {
+        const button = this.document.createElement('button');
+        button.type = 'button';
+        button.className = 'compare-target-option';
+        button.textContent = `${this.objectLabel(object)}${object.track_id == null ? ` ${index + 1}` : ` #${object.track_id}`}`;
+        button.setAttribute('aria-pressed', String(this.targetKey(object, index) === this.selectedTargetKey));
+        button.onclick = () => this.selectSpatialTarget(index);
+        return button;
+      }));
+    }
+
+    renderCompare() {
+      const data = this.spatialResult;
+      const hasFrame = Boolean(data && String(data.image_seq) === String(data.depth_frame_id) &&
+        data.raw_frame_preview && data.depth_preview && this.compareFrameReady?.sequence === String(data.image_seq) &&
+        this.compareFrameReady.original && this.compareFrameReady.depth);
+      const originalPlaceholder = this.get('compareOriginalPlaceholder');
+      const depthPlaceholder = this.get('compareDepthPlaceholder');
+      const frameMeta = this.get('compareFrameMeta');
+      if (originalPlaceholder) originalPlaceholder.hidden = hasFrame;
+      if (depthPlaceholder) depthPlaceholder.hidden = hasFrame;
+      if (frameMeta) frameMeta.textContent = hasFrame
+        ? `检测帧 ${data.image_seq} · 深度帧 ${data.depth_frame_id} · ${data.frame_width || '—'} × ${data.frame_height || '—'}`
+        : '等待相同帧的检测与深度结果';
+      const selectedIndex = hasFrame ? (data.objects || []).findIndex((object, index) =>
+        this.targetKey(object, index) === this.selectedTargetKey) : -1;
+      if (hasFrame && !this.compareImage.hidden && this.compareImage.naturalWidth) {
+        drawDetections(this.compareDetectionCanvas, this.compareImage, data, selectedIndex);
+      } else if (this.compareDetectionCanvas) {
+        const ctx = this.compareDetectionCanvas.getContext('2d');
+        ctx.clearRect(0, 0, this.compareDetectionCanvas.width, this.compareDetectionCanvas.height);
+      }
+      const selected = selectedIndex >= 0 ? data.objects[selectedIndex] : null;
+      if (hasFrame && selected && !this.compareDepthImage.hidden && this.compareDepthImage.naturalWidth) {
+        drawDepthHighlight(this.compareDepthCanvas, this.compareDepthImage, data, selected);
+      } else if (this.compareDepthCanvas) {
+        const ctx = this.compareDepthCanvas.getContext('2d');
+        ctx.clearRect(0, 0, this.compareDepthCanvas.width, this.compareDepthCanvas.height);
+      }
+      this.renderSelectedTarget(selected);
+    }
+
+    renderSelectedTarget(object) {
+      const name = this.get('compareTargetName');
+      const direction = this.get('compareTargetDirection');
+      const depth = this.get('compareTargetDepth');
+      const risk = this.get('compareTargetRisk');
+      if (!object) {
+        name.textContent = '尚未选择目标';
+        direction.textContent = (this.spatialResult?.objects || []).length ? '点击左侧检测框，查看方位' : '当前帧没有可选择的检测目标';
+        depth.textContent = '相对深度将在目标深度分析完成后显示';
+        risk.textContent = '当前风险等级等待评估';
+        return;
+      }
+      const directionNames = {left: '左侧', front: '正前方', right: '右侧'};
+      const depthNames = {near: '较近', mid: '中等', far: '较远'};
+      const region = object.depth || {};
+      const percentile = region.depth_percentile != null && Number.isFinite(Number(region.depth_percentile))
+        ? ` · 相对深度 ${Math.round(Number(region.depth_percentile) * 100)}%` : '';
+      const riskResult = object.risk || {};
+      name.textContent = `${this.objectLabel(object)}${object.track_id == null ? '' : ` · 跟踪 #${object.track_id}`}`;
+      direction.textContent = `方位：${directionNames[object.direction] || '正前方'}`;
+      depth.textContent = `相对深度：${depthNames[region.level] || '暂不可用'}${percentile}`;
+      risk.textContent = `风险等级：${/^L[0-3]$/.test(riskResult.level || '') ? riskResult.level : '尚未评估'}`;
+    }
+
+    handleAlert(result) {
+      if (result.device_id !== this.sourceId) return;
+      // Risk events are the depth-aware speech channel.  They are delivered
+      // separately from frame updates so L3 can interrupt a generic phrase.
+      this.speech?.announceAlert?.(result);
+      this.spatialAlerts.unshift(result);
+      this.spatialAlerts = this.spatialAlerts.slice(0, 5);
+      const container = this.get('spatialAlertEvents');
+      if (!container) return;
+      container.replaceChildren(...this.spatialAlerts.map(event => {
+        const row = this.document.createElement('div');
+        row.className = 'spatial-alert-row spatial-alert-' + String(event.alert_state || 'L0').toLowerCase();
+        const label = this.document.createElement('strong');
+        const priority = event.speech_priority ? ` · 语音优先级 ${event.speech_priority}` : '';
+        label.textContent = `${event.alert_state || '预警'} · ${event.object || '障碍物'}${priority}`;
+        const detail = this.document.createElement('span');
+        const depth = event.relative_depth?.level ? ` · 相对深度 ${event.relative_depth.level}` : '';
+        const frames = event.frame_id != null && event.depth_frame_id != null
+          ? ` · 检测帧 ${event.frame_id} / 深度帧 ${event.depth_frame_id}` : '';
+        detail.textContent = `${event.approach_reason || '风险状态变化'}${depth}${frames} · ${event.delivery_status || '发送状态未知'}${event.voice_status ? ' · 语音 ' + event.voice_status : ''}`;
+        row.append(label, detail);
+        return row;
+      }));
     }
 
     renderDetection() {
@@ -461,10 +827,26 @@
       return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
     }
 
+    drawPreview(canvas) {
+      if (!this.active()) return false;
+      const media = this.isLocal() ? this.video : this.image;
+      const sourceWidth = this.isLocal() ? media.videoWidth : media.naturalWidth;
+      const sourceHeight = this.isLocal() ? media.videoHeight : media.naturalHeight;
+      if (!sourceWidth || !sourceHeight) return false;
+      const scale = Math.min(1, 1280 / sourceWidth);
+      canvas.width = Math.max(1, Math.round(sourceWidth * scale));
+      canvas.height = Math.max(1, Math.round(sourceHeight * scale));
+      canvas.getContext('2d').drawImage(media, 0, 0, canvas.width, canvas.height);
+      return true;
+    }
+
     dispose() {
       this.stop(false);
       if (this.sourceRequest) this.sourceRequest.abort();
       this.clearInterval(this.sourceTimer);
+      this.document.removeEventListener?.('fullscreenchange', this.fullscreenChanged);
+      this.document.removeEventListener?.('webkitfullscreenchange', this.fullscreenChanged);
+      root.removeEventListener?.('resize', this.fullscreenChanged);
     }
   }
 

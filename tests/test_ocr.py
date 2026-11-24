@@ -18,6 +18,19 @@ def image_bytes():
     return buffer.getvalue()
 
 
+def test_rapidocr_returns_boxes_in_reading_order():
+    rows = [
+        ([[80, 16], [150, 16], [150, 34], [80, 34]], '右侧文字', 0.95),
+        ([[10, 12], [70, 12], [70, 30], [10, 30]], '第一行', 0.91),
+        ([[12, 42], [68, 42], [68, 60], [12, 60]], '下一行', 0.88),
+        ([[0, 0], [5, 0], [5, 5], [0, 5]], '低置信度', 0.1),
+    ]
+    text, boxes = ocr._rapid_text_and_boxes((rows, None))
+    assert text == '第一行 右侧文字\n下一行'
+    assert [box['text'] for box in boxes] == ['第一行', '右侧文字', '下一行']
+    assert boxes[0]['points'] == [[10.0, 12.0], [70.0, 12.0], [70.0, 30.0], [10.0, 30.0]]
+
+
 def test_ocr_sends_real_image_and_reports_truncation(monkeypatch):
     image = image_bytes()
     monkeypatch.setattr(settings, 'openai_base_url', 'http://model.test/v1')
@@ -37,6 +50,9 @@ def test_ocr_sends_real_image_and_reports_truncation(monkeypatch):
     assert result['text'] == '启明帽'
     assert result['has_text'] is True
     assert result['truncated'] is True
+    assert result['boxes'] == []
+    assert result['image_width'] == 160
+    assert result['image_height'] == 80
 
 
 @pytest.mark.parametrize('data', [b'', b'not an image', b'\xff\xd8broken'])
@@ -99,13 +115,20 @@ def test_endpoint_authentication_and_size_limit(tmp_path, monkeypatch):
 
         async def recognized(image):
             assert image == image_bytes()
-            return {'type': 'ocr_result', 'text': '测试文字', 'has_text': True, 'truncated': False, 'model': 'test'}
+            return {'type': 'ocr_result', 'text': '测试文字', 'has_text': True, 'truncated': False,
+                    'model': 'test', 'boxes': [{'text': '测试文字', 'points': [[1, 2], [3, 2], [3, 4], [1, 4]]}],
+                    'image_width': 160, 'image_height': 80}
 
         monkeypatch.setattr(main, 'recognize_text', recognized)
         response = client.post('/api/ocr/read', content=image_bytes(), headers=headers)
         assert response.status_code == 200
         assert response.json()['text'] == '测试文字'
+        assert response.json()['boxes'][0]['text'] == '测试文字'
         assert response.json()['timestamp']
         assert client.get('/ocr-reader.js').status_code == 200
+        assert client.get('/ocr-page.css').status_code == 200
         client.cookies.set('qh_token', token)
-        assert 'QimingOCR.mount' in client.get('/dashboard.html').text
+        dashboard = client.get('/dashboard.html').text
+        assert 'QimingOCR.mount' in dashboard
+        assert 'id="textReader"' in dashboard
+        assert 'id="ocrCameraSelect"' in dashboard

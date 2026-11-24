@@ -1,8 +1,10 @@
 # 启明帽 Android 平板端
 
-Flutter 客户端，连接项目现有 FastAPI / YOLO / Qwen3-VL 电脑后端。支持服务器配置、验证码登录、系统总览、手机 / 平板本机摄像头与电脑网页摄像头画面选择、当前画面识字、Android TTS 朗读与停止 / 重播、实时检测、设备列表和设置。
+Flutter 客户端，连接项目现有 FastAPI / YOLO / Qwen3-VL 电脑后端。支持服务器配置、验证码登录、系统总览、家属远程协助、手机 / 平板本机摄像头与电脑网页摄像头画面选择、当前画面识字、Android TTS 朗读与停止 / 重播、实时检测、设备列表和设置。
 
 完整工具链、USB / 局域网运行、APK 打包与故障排查见 [平板端开发说明](../docs/tablet.md)。Python 仍使用 Conda 的 `yolo-blind`，Flutter 使用独立 SDK。
+
+当前工程按 Flutter 3.50.0 / Dart 3.14.0 配置，首次进入 `tablet_app` 后执行 `flutter pub get`。Android 构建使用项目内 Gradle 9.5.0；如果在 Windows 中文路径下构建，`android/gradle.properties` 已启用路径检查兼容项。
 
 在 `QimingHat` 根目录：
 
@@ -23,4 +25,6 @@ App 填写电脑局域网 IP 地址，如 `http://192.168.1.10:8765`；模拟器
 
 查看电脑摄像头：先在电脑网页“实时环境监测”中启动摄像头，再在 App 同名页面顶部的“摄像头来源”选择“电脑网页摄像头”。可暂停观看，也可对当前收到的远端画面识字并在手机 / 平板朗读。停止上传后旧画面自动清空；切换回本机来源后需手动开启本机摄像头。此功能需要同时更新并重启后端，JPEG 画面的刷新速度受上传端限制。
 
-调试包：`tablet_app/build/app/outputs/flutter-apk/app-debug.apk`。真实平板的相机、中文声音和蓝牙仍需设备联调；帽端扬声器链路尚未接通。
+家属远程协助位于独立一级入口。当前账号可先“添加我的帽端”，再按需授权其他家属。家属可查看授权设备的画面、Wi-Fi 粗略位置、设备心跳和最近预警，并发送文字或录音识别后的留言。Android 录音交由电脑本地 SenseVoice 识别，用户确认文字后才发送至帽端合成播报。操作和接口说明见 [家属协助说明](../docs/family_assistance.md)。
+
+调试包：`tablet_app/build/app/outputs/flutter-apk/app-debug.apk`。当前本机构建使用独立预览包，包名为 `com.qiminghat.qiminghat_tablet.preview`。平板录音、电脑转写及确认发送已实机验证，实体帽子画面与扬声器出声仍待帽端联网后验证。

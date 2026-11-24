@@ -37,11 +37,21 @@
 #define MOTOR_LEFT_PIN 40
 #define MOTOR_RIGHT_PIN 41
 
-// LU6288 is advertised as SYN6288-compatible. TX-only UART keeps the module's
-// logic-level output disconnected until its voltage is verified.
-#define ENABLE_TTS 1
-#define TTS_UART_TX_PIN 21
-#define TTS_UART_BAUD 9600U
+// The old LU6288 UART output is disabled. TTS audio uses a separate WebSocket
+// and MAX98357A I2S output; set the three verified pins in config.local.h.
+#define ENABLE_TTS 0
+#ifndef TTS_I2S_BCLK_PIN
+#define TTS_I2S_BCLK_PIN -1
+#endif
+#ifndef TTS_I2S_LRCLK_PIN
+#define TTS_I2S_LRCLK_PIN -1
+#endif
+#ifndef TTS_I2S_DIN_PIN
+#define TTS_I2S_DIN_PIN -1
+#endif
+#ifndef TTS_I2S_PORT
+#define TTS_I2S_PORT I2S_NUM_1
+#endif
 
 #if CAMERA_JPEG_TRANSPORT
 #define IMAGE_INTERVAL_MS 40U

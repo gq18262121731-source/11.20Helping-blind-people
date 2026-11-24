@@ -41,15 +41,18 @@ def create_captcha():
     code = "".join(secrets.choice("ABCDEFGHJKLMNPQRSTUVWXYZ23456789") for _ in range(5))
     captcha_id = secrets.token_urlsafe(24)
     width = 150
-    positions = [f"x='{18 + index * 27}' y='{34 + secrets.randbelow(9) - 4}'" for index in range(5)]
+    positions = [f"x='{18 + index * 27}' y='{32 + secrets.randbelow(5) - 2}'" for index in range(5)]
     letters = "".join(
-        f"<text {position} transform='rotate({secrets.randbelow(25) - 12} {18 + index * 27} 30)'>{escape(char)}</text>"
+        f"<text {position} transform='rotate({secrets.randbelow(13) - 6} {18 + index * 27} 30)'>{escape(char)}</text>"
         for index, (position, char) in enumerate(zip(positions, code))
     )
     svg = (
         f"<svg xmlns='http://www.w3.org/2000/svg' width='{width}' height='46' viewBox='0 0 {width} 46'>"
-        "<rect width='150' height='46' rx='7' fill='#091a2d'/><path d='M4 37L141 8M8 8L143 37' stroke='#31516b' stroke-width='1'/>"
-        f"<g fill='#bceaff' font-family='monospace' font-size='23' font-weight='700'>{letters}</g></svg>"
+        "<defs><pattern id='captcha-dots' width='10' height='10' patternUnits='userSpaceOnUse'>"
+        "<circle cx='2' cy='2' r='.65' fill='#8BA4BF' opacity='.25'/></pattern></defs>"
+        "<rect width='150' height='46' rx='8' fill='#F3F6FB'/>"
+        "<rect width='150' height='46' rx='8' fill='url(#captcha-dots)'/>"
+        f"<g fill='#244E7B' font-family='Consolas, Courier New, monospace' font-size='23' font-weight='600'>{letters}</g></svg>"
     )
     with _captcha_lock:
         now = _utcnow()

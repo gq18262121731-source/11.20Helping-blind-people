@@ -195,17 +195,21 @@ ESP32 RGB565 / 灰度采集 → 软件 JPEG → /ws/camera?format=jpeg → 校�
 | 停止 | 二进制 `S` | 原贴固件不支持 |
 | 收帧确认 | 文本 `ACK` | 不发送 ACK |
 
-### LU6288 硬件语音播报
+### 旧版 LU6288 UART 语音（历史记录，当前已停用）
 
-- 自动障碍物告警在原方向指令后附加二进制下行消息：ASCII `T` 前缀 + LU6288 文本命令。
-  ESP32 剥掉 `T` 后经 9600 baud UART 发送 `<G>` 与 GBK 中文文本；后端先将常见 COCO
-  类别映射为中文。这个格式依据用户在 SSCOM / CH340 上成功播报的 `<G>前方有人` 实测。
+> 以下记录用于追溯旧硬件联调。当前固件不再向 GPIO21 发送 LU6288 文本，LU6288 模块已更换；现行帽端播报使用下方 Edge TTS 音频下行与 MAX98357A I2S。
+
+- 协议 2 帽端会播报连续两帧确认的新物品及方位；目标持续可见时不会逐帧重复，离开画面约 3 秒后再次出现会重新播报。
+  紧急障碍物告警仍会附加“请注意”，并优先于普通物品播报。语音开关关闭时，两类硬件播报都会停止。
+- 后端发送二进制下行消息：ASCII `T` 前缀 + LU6288 文本命令。ESP32 剥掉 `T` 后经 9600 baud UART
+  发送 `<G>` 与 GBK 中文文本；COCO 类别映射为中文。这个格式依据用户在 SSCOM / CH340 上成功播报的
+  `<G>前方有人` 实测。
 - 固件校验前缀和消息长度后，经 `Serial1` TX GPIO21 原样送入 LU6288 `RX`；
   模块 `TX`、`BUSY` 暂不连接。代码默认 UART 仅发送，设备播报状态没有回传确认。
 - LU6288 `5V` 接稳压 5V，`GND` 与 ESP32 共地，`SP+ / SP-` 接随附扬声器；
   ESP32 GPIO 输出为 3.3V，接入模块 RX 前需确认模块接受 3.3V UART 高电平。
   GPIO21 必须在板上引出并保持空闲，不能仅凭编译通过视为板级接线确认。
-- Python 测试验证告警文本和 GBK 编码；用户已确认 ESP32 经 GPIO21 驱动 LU6288 喇叭出声。
+- Python 测试验证普通物品、紧急告警文本和 GBK 编码；用户已确认 ESP32 经 GPIO21 驱动 LU6288 喇叭出声。
   电脑网页语音仍独立运行。模块 TX/BUSY 未接，后端没有模块播报完成回执。
 - 套件 CH340 隔离验证已确认有声：断电后先拔掉 ESP32 GPIO21 到 LU6288 RX 的线，
   将 CH340 `TXD → RX`、`GND → GND`、`5V → 5V`，喇叭仍接 `SP+ / SP-`；
@@ -218,6 +222,19 @@ ESP32 RGB565 / 灰度采集 → 软件 JPEG → /ws/camera?format=jpeg → 校�
   误识别和摄像头当前视野；播报由真实模型输出触发，不是摄像头离线提示。
 - 当前 `<G>` 文本命令没有调整 LU6288 的音量或音色，模块仍使用默认值。可调范围和控制
   命令尚未从该模块的资料中核实；拿到 LU6288 随附协议或卖家控制命令后再实现设置。
+
+### Edge TTS 音频下行与 MAX98357A I2S
+
+当前电脑侧以高频语句 WAV 缓存为优先；文本未命中时，由 Edge TTS 生成音频，经 FFmpeg 转为 16 kHz、16-bit、单声道 PCM，并写入本地语音库。Edge TTS 合成失败会报告失败状态，不会假报已播放。
+
+- `/ws/tts?device_id=esp32s3_cam_001` 是独立连接；摄像头继续使用 `/ws/camera`，麦克风上传继续使用 `/ws/audio`。
+- 固件 `tts_player.h` 在独立 FreeRTOS 网络任务中收取协议 v1 的 START/CHUNK/END/CANCEL 帧；有限长度队列把音频块交给专门 I2S 写任务。摄像头采集和马达输出不会同步等待音频播放。
+- 播放格式为 16 kHz PCM S16LE 单声道，面向 MAX98357A；固件按 START 中的长度和 CHUNK 序号校验，再发送 READY、PLAYBACK_STARTED、PLAYBACK_DONE、PLAYBACK_ERROR 或 PLAYBACK_CANCELLED 回执。
+- `config.local.h` 可配置 `TTS_I2S_BCLK_PIN`、`TTS_I2S_LRCLK_PIN`、`TTS_I2S_DIN_PIN`。三个宏目前保留为 `-1`；I2S 未配置时设备拒绝播放并回报错误码，不会声称播放成功。
+- 电脑端实时合成依赖 `edge-tts` 与 FFmpeg；安装 `python -m pip install -r backend/requirements-tts.txt`，FFmpeg 必须能从后端进程的 PATH 或 `TTS_FFMPEG` 指定路径找到。
+- 软件模拟可运行 `python tools/tts_hat_simulator.py --device-id esp32s3_cam_001`。可选 `--play` 会通过电脑自己的扬声器试听，不能代表帽端 MAX98357A 真机播放。
+
+目前尚未补录三个 MAX98357A GPIO，也尚未为此链路重新编译/烧录和在帽端扬声器上试听。原来摄像头与马达单独协议保持独立，不应把 TTS PCM 混入其中。
 
 新示例的每次震动固定 300 ms。该单字节协议不携带可变 `duration_ms` 或执行回执。
 原来的 `/ws/device` 与 `QH` 头协议保持独立，不应把两种帧格式混用。

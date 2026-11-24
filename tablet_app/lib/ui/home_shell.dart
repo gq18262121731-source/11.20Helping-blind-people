@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import '../core/app_controller.dart';
 import 'camera_page.dart';
 import 'common.dart';
+import 'family_page.dart';
 import 'management_pages.dart';
 import 'overview_page.dart';
 
@@ -17,9 +18,10 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   int _index = 0;
-  final _labels = const ['系统总览', '实时环境监测', '设备管理', '系统设置'];
+  final _labels = const ['系统总览', '家属远程协助', '实时环境监测', '设备管理', '系统设置'];
   final _icons = const [
     Icons.dashboard_outlined,
+    Icons.family_restroom_outlined,
     Icons.camera_alt_outlined,
     Icons.sensors,
     Icons.settings_outlined,
@@ -52,9 +54,10 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   }
 
   Widget get _page => switch (_index) {
-    0 => OverviewPage(app: widget.app, onOpenCamera: () => _navigate(1)),
-    1 => CameraPage(app: widget.app),
-    2 => DevicesPage(app: widget.app),
+    0 => OverviewPage(app: widget.app, onOpenCamera: () => _navigate(2)),
+    1 => FamilyAssistPage(app: widget.app),
+    2 => CameraPage(app: widget.app),
+    3 => DevicesPage(app: widget.app),
     _ => SettingsPage(app: widget.app),
   };
   @override

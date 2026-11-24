@@ -23,6 +23,8 @@ __pycache__/
 *.sqlite3
 *.pt
 *.onnx
+models/depth-anything-v2/*.pth
+models/depth-anything-v2/*.part
 *.log
 /handoff_render/
 *.apk
@@ -42,8 +44,24 @@ local.properties
 
 # JavaScript dependencies.
 node_modules/
+.finesse/
 
 # Local firmware backups.
 /firmware/esp32s3_gray_camera/config.local.h
 /firmware/local_backups/
+
+# Downloaded software-acceptance assets and extracted model archives.
+/test_assets/
+/docs/acceptance_artifacts/
+
+# Machine-local tool downloads and document/test review artifacts.
+/.tools/
+/.workbench/*
+!/.workbench/spec.md
+
+# Locally generated Edge TTS phrase audio; keep the curated phrase list tracked.
+/backend/data/tts/library/
+/backend/data/tts/simulator-output/
+.cache/asr/
+backend/models/asr/**/test_wavs/
 

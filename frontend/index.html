@@ -1,149 +1,284 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>启明智能陪护管理平台</title><style>:root{--bg:#071426;--panel:#102541;--line:#204568;--text:#e9f4ff;--muted:#8ea9c5;--blue:#55c9ff;--green:#55e4a5;--red:#ff7188}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px "Segoe UI","Microsoft YaHei",sans-serif}header{height:64px;background:#0d2039;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 24px;gap:22px}header h1{font-size:20px;margin:0}.layout{display:flex;min-height:calc(100vh - 64px)}nav{width:220px;padding:18px 12px;background:#0b1c31;border-right:1px solid var(--line)}nav button{display:block;width:100%;padding:12px 14px;margin:4px 0;text-align:left;border:0;border-radius:9px;color:var(--muted);background:transparent;cursor:pointer}nav button.active,nav button:hover{background:#173b5d;color:#fff}main{flex:1;padding:24px;max-width:1500px}.page{display:none}.page.active{display:block}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}.value{font-size:29px;color:var(--blue);margin-top:12px}.muted{color:var(--muted)}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #214264;text-align:left}input{background:#0a1b30;color:#fff;border:1px solid var(--line);padding:8px;border-radius:6px;margin:4px}.action{background:#17618d;color:#fff;border:0;padding:9px 13px;border-radius:7px;cursor:pointer}.pill{display:inline-block;background:#1d4667;border-radius:15px;padding:5px 9px;margin:4px}.ok{color:var(--green)}.bad{color:var(--red)}.log{max-height:300px;overflow:auto}@media(max-width:900px){nav{width:160px}.grid{grid-template-columns:repeat(2,1fr)}}</style><link rel="stylesheet" href="/overview.css"></head><body><header><h1>启明智能陪护管理平台</h1><span id="conn" class="bad">后端连接中…</span><span class="muted">设备：qiming_hat_001</span></header><div class="layout"><nav><button class="active" data-page="overview">系统总览</button><button data-page="monitor">实时环境监测</button><button data-page="alerts">障碍物预警记录</button><button data-page="voices">语音交互记录</button><button data-page="devices">设备管理</button><button data-page="settings">系统参数设置</button><button data-page="debug">硬件调试</button></nav><main>
-<section id="overview" class="page active">
-  <div class="grid overview-metrics">
-    <div class="card">设备状态<div id="device" class="value">检查中</div><p id="deviceNote" class="metric-note">正在检查设备连接</p></div>
-    <div class="card">今日预警<div id="alertCount" class="value">—</div><p id="alertNote" class="metric-note">正在读取今日统计</p></div>
-    <div class="card">今日交互<div id="voiceCount" class="value">—</div><p id="voiceNote" class="metric-note">正在读取今日统计</p></div>
-    <div class="card">AI 状态<div id="model" class="value">检查中</div><p id="modelNote" class="metric-note">正在检查检测模式</p></div>
-  </div>
-  <div class="overview-grid">
-    <div class="card">
-      <div class="overview-heading"><div><h2>近 7 天预警趋势</h2><p id="overviewTrendSummary">正在读取统计</p></div></div>
-      <div class="overview-legend"><span><i></i>实际采集</span><span class="simulation"><i></i>模拟设备</span></div>
-      <div id="overviewTrend" class="overview-chart">正在加载预警趋势…</div>
-    </div>
-    <div class="card">
-      <div class="overview-heading"><h2>模块运行状态</h2><button class="overview-link" type="button" data-overview-page="monitor">前往监测</button></div>
-      <ul class="overview-status-list">
-        <li><div><strong>后端服务</strong><p id="overviewBackendDetail">正在检查连接</p></div><span id="overviewBackendState" class="overview-state">检查中</span></li>
-        <li><div><strong>YOLO 检测模型</strong><p id="overviewYoloDetail">正在检查模型</p></div><span id="overviewYoloState" class="overview-state">检查中</span></li>
-        <li><div><strong>对话 / 识字模型</strong><p id="overviewLlmDetail">正在检查模型服务</p></div><span id="overviewLlmState" class="overview-state">检查中</span></li>
-        <li><div><strong>本地摄像头</strong><p id="overviewCameraDetail">在实时环境监测中开启</p></div><span id="overviewCameraState" class="overview-state">未开启</span></li>
-        <li><div><strong>帽子设备</strong><p id="overviewDeviceDetail">正在检查设备连接</p></div><span id="overviewDeviceState" class="overview-state">检查中</span></li>
-      </ul>
-    </div>
-    <div class="card">
-      <div class="overview-heading"><div><h2>最近预警</h2><p>最近 5 条记录</p></div><button class="overview-link" type="button" data-overview-page="alerts">查看全部</button></div>
-      <ul id="overviewAlerts" class="overview-records"><li class="overview-empty">正在读取预警记录…</li></ul>
-    </div>
-    <div class="card">
-      <div class="overview-heading"><div><h2>最近交互</h2><p>最近 5 次提问与回复</p></div><button class="overview-link" type="button" data-overview-page="voices">查看全部</button></div>
-      <ul id="overviewVoices" class="overview-records"><li class="overview-empty">正在读取交互记录…</li></ul>
-    </div>
-  </div>
-  <p id="overviewUpdated" class="overview-updated" role="status">正在加载系统总览…</p>
-</section>
-<section id="monitor" class="page">
-  <div class="card camera-card">
-    <div class="camera-head monitor-head">
-      <div class="monitor-heading">
-        <h2>实时环境监测</h2>
-        <p id="cameraStatus" class="muted">摄像头未启动</p>
-      </div>
-      <div id="monitorControls" class="monitor-controls">
-        <div class="camera-actions" role="group" aria-label="摄像头与物品播报">
-          <label class="muted" for="cameraSelect">摄像头</label>
-          <select id="cameraSelect" aria-label="选择摄像头画面来源"><option value="local:">默认电脑摄像头</option><option value="remote:esp32s3_cam_001">ESP32 帽端摄像头（等待画面）</option></select>
-          <button class="action" id="cameraStart" type="button">启动摄像头</button>
-          <button class="action secondary" id="cameraStop" type="button" disabled>停止</button>
-          <label class="muted camera-speech-toggle"><input id="cameraSpeechEnabled" type="checkbox" checked>语音播报（每类目标一次）</label>
-          <button class="action secondary" id="cameraSpeechTest" type="button">测试播报</button>
-        </div>
-        <div class="camera-actions" role="group" aria-label="文字识别与朗读">
-          <button class="action" id="ocrCapture" type="button">识字并朗读</button>
-          <button class="action secondary" id="ocrReplay" type="button" disabled>重新朗读</button>
-          <button class="action secondary" id="ocrStop" type="button" disabled>停止识字 / 朗读</button>
-        </div>
-      </div>
-    </div>
-    <div id="cameraStage" class="camera-stage">
-      <video id="cameraVideo" autoplay muted playsinline></video>
-      <img id="cameraRemote" alt="所选设备上传的实时画面" hidden>
-      <canvas class="detection-overlay" id="cameraOverlay"></canvas>
-      <div id="cameraPlaceholder" class="camera-placeholder">
-        <span class="camera-mark">CAM</span><strong id="cameraPlaceholderTitle">所选来源画面</strong>
-        <span id="cameraPlaceholderHint">选择画面来源后，点击上方按钮开始查看</span>
-      </div>
-      <div class="camera-overlay"><span id="cameraLive" class="live-dot">● 未连接</span><span id="cameraFps">等待画面</span></div>
-    </div>
-    <div class="camera-foot">
-      <div class="wifi-location" aria-live="polite">
-        <strong>ESP32 Wi-Fi 粗略定位</strong>
-        <span id="wifiLocationStatus" class="muted">选择并启动帽端监测后读取</span>
-        <span id="wifiLocationDetail" class="muted">仅发送热点 MAC 地址和信号强度至 BeaconDB，不发送 Wi-Fi 名称或密码；结果为粗略估算</span>
-      </div>
-      <p id="detection" class="muted">检测结果将在摄像头启动后显示</p>
-      <p id="speechStatus" class="muted" role="status" aria-live="polite">启动摄像头后，将自动用中文播报识别到的物品</p>
-      <div id="objects"></div>
-      <p id="monitorText" class="muted"></p>
-      <div id="monitorObjects"></div>
-      <p id="ocrStatus" class="muted" role="status" aria-live="polite">对准文字后，点击上方“识字并朗读”</p>
-      <div id="ocrResults" hidden>
-        <h3>识别文字</h3>
-        <pre id="ocrText" aria-label="识别文字"></pre>
-      </div>
-    </div>
-  </div>
-</section>
-<section id="alerts" class="page"><div class="card"><h2>障碍物预警记录</h2><a class="action" href="/api/export/obstacles.xlsx">导出 Excel</a><div class="log"><table><thead><tr><th>时间</th><th>目标</th><th>方位</th><th>置信度</th><th>播报</th></tr></thead><tbody id="alertRows"></tbody></table></div></div></section>
-<section id="voices" class="page"><div class="card"><h2>语音交互记录</h2><div class="log"><table><thead><tr><th>时间</th><th>用户</th><th>回复</th><th>类型</th><th>状态</th></tr></thead><tbody id="voiceRows"></tbody></table></div></div></section>
-<section id="devices" class="page"><div class="card"><h2>设备管理</h2><div id="deviceList" class="muted">暂无设备</div></div></section>
-<section id="settings" class="page"><div class="card"><h2>系统参数设置</h2><label>置信度 <input id="confidence" type="number" min="0" max="1" step=".05"></label><label>预警冷却(ms) <input id="cooldown" type="number"></label><br><label><input id="obstacle" type="checkbox"> 启用障碍物预警</label><label><input id="voice" type="checkbox"> 启用语音交互</label><br><button class="action" id="saveConfig">保存设置</button> <span id="saveMsg" class="muted"></span></div></section>
-<section id="debug" class="page"><div class="card"><h2>软件联调</h2><p class="muted">硬件未连接时请使用模拟设备。</p><input id="simVoice" placeholder="输入环境问题，例如：前面有什么？"><button class="action" id="sendVoice">测试语音查询</button><pre id="debugOut"></pre></div></section></main></div><script src="/camera-speech.js"></script><script src="/camera-monitor.js"></script><script>
-const $=x=>document.getElementById(x);const cameraSpeech=QimingCameraSpeech.create({onStatus:message=>{$('speechStatus').textContent=message}});let ws;const logoutButton=document.createElement('button');logoutButton.id='logoutButton';logoutButton.type='button';logoutButton.textContent='退出登录';logoutButton.title='退出当前账号';logoutButton.setAttribute('aria-label','退出当前账号');Object.assign(logoutButton.style,{marginLeft:'auto',padding:'9px 14px',border:'1px solid #37769b',borderRadius:'8px',background:'#123653',color:'#dff5ff',cursor:'pointer',font:'inherit'});document.querySelector('header').append(logoutButton);logoutButton.onclick=async()=>{stopCamera(false);logoutButton.disabled=true;try{const token=sessionStorage.getItem('qh_token')||localStorage.getItem('qh_token');await fetch('/api/auth/logout',{method:'POST',headers:token?{Authorization:'Bearer '+token}:{}})}finally{sessionStorage.removeItem('qh_token');localStorage.removeItem('qh_token');document.cookie='qh_token=; Path=/; Max-Age=0';location.replace('/')}};document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button,.page').forEach(x=>x.classList.remove('active'));b.classList.add('active');$(b.dataset.page).classList.add('active')});
-async function json(url,opt){return fetch(url,opt).then(r=>r.json())}async function refresh(){let a=await json('/api/obstacles');$('alertRows').innerHTML=a.map(x=>`<tr><td>${x.detected_at}</td><td>${x.object_class}</td><td>${x.direction}</td><td>${x.confidence}</td><td>${x.voice_text}</td></tr>`).join('');let v=await json('/api/voices');$('voiceRows').innerHTML=v.map(x=>`<tr><td>${x.occurred_at}</td><td>${x.user_text}</td><td>${x.reply_text}</td><td>${x.request_type}</td><td>${x.tts_status}</td></tr>`).join('');let c=await json('/api/config');cameraSpeech.configure(c);$('cameraSpeechEnabled').checked=c.speech_enabled!==false;$('cameraSpeechTest').disabled=!cameraSpeech.supported||c.speech_enabled===false;$('confidence').value=c.confidence;$('cooldown').value=c.alert_cooldown_ms;$('obstacle').checked=c.obstacle_enabled;$('voice').checked=c.voice_enabled;let d=await json('/api/devices');$('deviceList').innerHTML=d.length?d.map(x=>`<p>${x.device_id}：<span class="${x.online?'ok':'bad'}">${x.online?'在线':'离线'}</span>，最后心跳：${x.last_heartbeat||'-'}</p>`).join(''):'暂无设备'}
-function connect(){ws=new WebSocket(`${location.protocol==='https:'?'wss:':'ws:'}//${location.host}/ws/web`);ws.onopen=()=>{$('conn').textContent='后端已连接';$('conn').className='ok'};ws.onclose=()=>{cameraSpeech.reset();$('conn').textContent='连接断开';$('conn').className='bad';setTimeout(connect,2000)};ws.onmessage=e=>{let x;try{x=JSON.parse(e.data)}catch(_){return}if(x.type==='device_status')window.dispatchEvent(new Event('qiming-device-status'));if(x.type==='detection_update')cameraMonitor.handleDetection(x)}}
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F5F7FA">
+  <title>启明智能陪护控制台</title>
+  <link rel="stylesheet" href="/overview.css">
+  <link rel="stylesheet" href="/brand.css">
+  <link rel="stylesheet" href="/overview-theme.css">
+  <link rel="stylesheet" href="/ocr-page.css">
+  <link rel="stylesheet" href="/voice-vision.css">
+  <link rel="stylesheet" href="/family-assist.css">
+  <link rel="stylesheet" href="/remote-guard.css">
+  <style>
+    /* finesse · register=product · shell=canonical-sidebar · palette=blue-aqua-orange */
+    @media (prefers-reduced-motion: reduce) { .page.active { animation: none; } }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#mainContent">跳到主要内容</a>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="主导航">
+      <div class="brand-lockup brand-lockup--sidebar"><div class="brand-mark" aria-hidden="true"><span>✦</span></div><div class="brand-copy"><strong>启明智能陪护</strong><span>管理平台</span></div></div>
+      <div class="sidebar-context"><span class="context-dot"></span><span>值守空间</span><span class="context-id">QH-01</span></div>
+      <nav class="primary-nav">
+        <p class="nav-label">工作台</p>
+        <button class="nav-item active" data-page="overview" type="button" aria-label="系统总览" title="系统总览" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"></rect><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"></rect><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"></rect><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"></rect></svg></span><span>系统总览</span><kbd>G&nbsp;H</kbd></button>
+        <button class="nav-item" data-page="monitor" type="button" aria-label="实时监测" title="实时监测"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7.5h3l1.5-2h7l1.5 2h3a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 20 19.5H4A1.5 1.5 0 0 1 2.5 18V9A1.5 1.5 0 0 1 4 7.5Z"></path><circle cx="12" cy="13" r="3.25"></circle></svg></span><span>实时监测</span><kbd>G&nbsp;M</kbd></button>
+        <button class="nav-item" data-page="textReader" type="button" aria-label="语音与识字" title="语音与识字"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v11H9l-5 3v-14Z"></path><path d="M8 9.5h8M8 13h5"></path></svg></span><span>语音与识字</span></button>
+        <button class="nav-item" data-page="family" type="button" aria-label="家属协助" title="家属协助"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"></circle><path d="M3.5 20v-2a5.5 5.5 0 0 1 11 0v2M15 5.5a3 3 0 0 1 0 5.7M18 14a5 5 0 0 1 2.5 4.3V20"></path></svg></span><span>家属协助</span></button>
+        <button class="nav-item" data-page="guardPage" type="button" aria-label="远程守护" title="远程守护"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3.5 6 5.6-2.5 5.8 2.5 5.6-2.5v14l-5.6 2.5-5.8-2.5L3.5 20Z"></path><path d="M9.1 3.5v14M14.9 6v14"></path><circle cx="12" cy="11" r="1.5"></circle></svg></span><span>远程守护</span></button>
+        <button class="nav-item" data-page="assistantPage" type="button" aria-label="AI 地图助手" title="AI 地图助手"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5.5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-5 3v-3H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z"></path><path d="M8 10h8M8 13.5h5"></path></svg></span><span>AI 地图助手</span></button>
+        <p class="nav-label nav-label-spaced">记录</p>
+        <button class="nav-item" data-page="alerts" type="button" aria-label="告警记录" title="告警记录"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3.2 9 16H3l9-16Z"></path><path d="M12 9v4.5M12 17h.01"></path></svg></span><span>告警记录</span><span class="nav-count" id="navAlertCount">—</span></button>
+        <p class="nav-label nav-label-spaced">管理</p>
+        <button class="nav-item" data-page="devices" type="button" aria-label="设备与参数" title="设备与参数"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="12.5" rx="1.8"></rect><path d="M8 20h8M12 16.5V20"></path></svg></span><span>设备与参数</span></button>
+        <button class="nav-item" data-page="debug" type="button" aria-label="开发者诊断" title="开发者诊断"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path><circle cx="9" cy="6" r="2"></circle><circle cx="15" cy="12" r="2"></circle><circle cx="8" cy="18" r="2"></circle></svg></span><span>开发者诊断</span><span class="nav-beta">工具</span></button>
+      </nav>
+      <div class="sidebar-footer"><div class="footer-signal"><span class="signal-bars"><i></i><i></i><i></i><i></i></span><span>链路加密</span></div><small>v0.9 · Qiming Hat</small></div>
+    </aside>
 
-$('saveConfig').onclick=async()=>{$('saveMsg').textContent='保存中…';await fetch('/api/config',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({confidence:+$('confidence').value,alert_cooldown_ms:+$('cooldown').value,obstacle_enabled:$('obstacle').checked,voice_enabled:$('voice').checked})});$('saveMsg').textContent='已保存'};$('sendVoice').onclick=async()=>{$('debugOut').textContent=JSON.stringify(await json('/api/simulate/voice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:'simulator_001',text:$('simVoice').value})}),null,2)};refresh();connect();setInterval(refresh,5000);
-const camVideo=$('cameraVideo');
-const cameraMonitor=QimingCameraMonitor.mount({objectSpeech:cameraSpeech});
-function stopCamera(update=true){cameraMonitor.stop(update)}
-cameraSpeech.setEnabled($('cameraSpeechEnabled').checked);$('cameraSpeechEnabled').onchange=async()=>{const enabled=$('cameraSpeechEnabled').checked;$('cameraSpeechEnabled').disabled=true;try{const response=await fetch('/api/config',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({speech_enabled:enabled})});if(!response.ok)throw new Error('保存失败');cameraSpeech.configure(await response.json());cameraSpeech.setEnabled(enabled);$('speechStatus').textContent=enabled?'电脑与帽端语音播报已开启':'电脑与帽端语音播报已关闭'}catch(error){$('cameraSpeechEnabled').checked=!enabled;$('speechStatus').textContent='语音设置保存失败，请重试'}finally{$('cameraSpeechEnabled').disabled=false}};$('cameraSpeechTest').onclick=()=>cameraSpeech.test();if(!cameraSpeech.supported){$('cameraSpeechTest').disabled=true;$('speechStatus').textContent='当前浏览器不支持本地语音播报，帽端播报开关仍可使用'}
+    <div class="app-main">
+      <header class="topbar"><div class="breadcrumbs"><span class="breadcrumb-root">启明控制台</span><span class="breadcrumb-sep">/</span><span id="currentPageLabel">系统总览</span></div><div class="topbar-actions"><span id="conn" class="connection-pill is-pending" role="status" aria-live="polite"><i></i>后端连接中…</span><span class="topbar-device"><i class="status-dot"></i><span>帽端</span><strong>qiming_hat_001</strong></span><details class="accessibility-menu"><summary class="accessibility-button" aria-label="打开高可读设置">高可读</summary><div class="accessibility-popover"><strong>显示与动效</strong><label><input type="checkbox" data-a11y="large">大字显示</label><label><input type="checkbox" data-a11y="contrast">高对比度</label><label><input type="checkbox" data-a11y="motion">减少动态</label></div></details><div class="operator-chip" title="当前登录账号"><span class="operator-avatar">值</span><span id="operatorName">值守人员</span></div></div></header>
 
-</script><style>body{background:radial-gradient(circle at 85% 0%,#153c61 0,#07111f 38%),#07111f}header{height:72px;background:#0a1a2eaa;backdrop-filter:blur(18px);border-bottom:1px solid #285273;padding:0 30px;position:sticky;top:0;z-index:4}header:before{content:'✦';display:grid;place-items:center;width:34px;height:34px;border-radius:11px;color:#07111f;background:linear-gradient(135deg,#63f3d0,#50d6ff);font-size:21px;box-shadow:0 0 22px #55dfff66}header h1{font-weight:650;letter-spacing:.5px}.layout{min-height:calc(100vh - 72px)}nav{width:238px;padding:22px 14px;background:#08182b99;border-right:1px solid #1b3b5a}nav:before{content:'智能陪护控制台';display:block;padding:0 14px 18px;color:#607e9a;font-size:11px;letter-spacing:1.5px}nav button{display:flex;align-items:center;padding:13px 14px;margin:6px 0;border:1px solid transparent;border-radius:11px;transition:.2s;font-size:14px}nav button:before{content:'•';color:#4e7896;font-size:20px;margin-right:12px;line-height:0}nav button.active,nav button:hover{background:linear-gradient(90deg,#16446a,#123452);border-color:#2b638d;box-shadow:0 8px 20px #0002}nav button.active:before{color:#63f3d0}main{padding:30px;max-width:1600px}.page.active{animation:fade .25s ease}@keyframes fade{from{opacity:.2;transform:translateY(5px)}to{opacity:1;transform:none}}.card{background:linear-gradient(145deg,#112945e8,#0b1b30e8);border-color:#1c3b5d;border-radius:16px;padding:20px;box-shadow:0 18px 45px #0005;position:relative;overflow:hidden}.card:after{content:'';position:absolute;right:-36px;top:-42px;width:120px;height:120px;border-radius:50%;background:#54dcff0b}.grid{gap:18px}.grid .card{min-height:122px}.grid .card:before{content:'LIVE';position:absolute;right:18px;top:18px;font-size:9px;letter-spacing:1px;color:#5fe2c0}.value{font-size:30px;font-weight:650;margin-top:16px}th{color:#86a8c5;font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.7px}th,td{padding:13px 11px}tbody tr:hover{background:#15314d88}.action{background:linear-gradient(135deg,#1986b4,#2462a3);padding:10px 15px;border-radius:9px;box-shadow:0 8px 18px #1678a833}.pill{background:#173e5d;border:1px solid #2b6386;padding:6px 10px;color:#b9eaff}.log{max-height:360px}.log::-webkit-scrollbar{width:7px}.log::-webkit-scrollbar-thumb{background:#28516f;border-radius:8px}@media(max-width:650px){header{padding:0 15px}header h1{font-size:15px}.layout{display:block}nav{width:100%;display:flex;overflow:auto;padding:10px}nav:before{display:none}nav button{min-width:max-content;margin:0 4px}main{padding:16px}}</style></body></html>
-<style>.camera-card{min-height:0}.camera-head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;position:relative;z-index:1}.camera-head h2{margin-bottom:6px}.camera-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.camera-actions select{background:#09192d;color:#dff5ff;border:1px solid #2b5272;border-radius:8px;padding:10px}.camera-actions .secondary{background:#284663}.camera-actions button:disabled{opacity:.45;cursor:not-allowed}.camera-stage{aspect-ratio:16/9;height:auto;min-height:0;background:#050d18;border:1px solid #285273;border-radius:12px;position:relative;overflow:hidden;margin-top:14px}.camera-stage.compact{height:auto}.camera-stage video{display:none;width:100%;height:100%;object-fit:contain;background:#050d18}.camera-stage.active video{display:block}.camera-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#91abc2;background:linear-gradient(145deg,#0b1d31,#06101d)}.camera-stage.active .camera-placeholder{display:none}.camera-mark{display:grid;place-items:center;width:58px;height:58px;border:1px solid #3e759a;border-radius:16px;color:#61e6dc;font-size:12px;letter-spacing:1px}.camera-placeholder strong{color:#d9edff;font-size:17px}.camera-overlay{position:absolute;left:14px;right:14px;top:12px;display:flex;justify-content:space-between;color:#d6eaff;font-size:12px;text-shadow:0 1px 4px #000;pointer-events:none}.live-dot{color:#a6b6c5}.camera-stage.active .live-dot{color:#63f3d0}.camera-foot{position:relative;z-index:1;margin-top:12px}.camera-foot p{margin:0 0 8px}.mirror-placeholder{display:flex}@media(max-width:760px){.camera-head{display:block}.camera-actions{margin-top:12px}.camera-stage{aspect-ratio:16/9;height:auto}}</style></body></html>
-</style><style>.detection-overlay{position:absolute;inset:0;z-index:2;pointer-events:none}.camera-stage video{object-fit:contain}</style>
-<script src="/ocr-reader.js"></script>
-<script>QimingOCR.mount({video:camVideo,objectSpeech:cameraSpeech,isCameraActive:()=>cameraMonitor.active(),captureFrame:()=>cameraMonitor.captureFrame()});</script>
-<script src="/overview.js"></script>
-<script>QimingOverview.mount({getCamera:()=>({active:Boolean(cameraMonitor.localStream&&cameraMonitor.localStream.getVideoTracks().some(track=>track.readyState==='live'))})});</script>
-<style>
-.monitor-head { flex-wrap: wrap; align-items: center; }
-.monitor-heading { flex: 1 1 180px; }
-.monitor-controls {
-  flex: 2 1 640px;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 10px;
-}
-.monitor-head .camera-actions { justify-content: flex-end; margin-top: 0; }
-.camera-speech-toggle { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
-#ocrText { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; line-height: 1.8; max-height: 360px; overflow: auto; }
-@media (max-width: 760px) {
-  .monitor-head { display: flex; }
-  .monitor-controls { align-items: flex-start; }
-  .monitor-head .camera-actions { justify-content: flex-start; }
-}
-@media (min-width: 651px) {
-  .layout > nav {
-    position: sticky;
-    top: 72px;
-    align-self: flex-start;
-    height: calc(100vh - 72px);
-    overflow-y: auto;
+      <main id="mainContent" class="main-content">
+        <section id="overview" class="page active" aria-labelledby="overviewTitle">
+          <div class="page-intro"><div><p class="eyebrow">今日值守</p><h1 id="overviewTitle" tabindex="-1">系统总览</h1><p class="page-lede">先确认链路，再处理异常。所有状态都来自最近一次真实设备与模型反馈。</p></div><div class="intro-meta"><span class="live-indicator"><i></i>实时刷新</span><span class="meta-divider"></span><span id="overviewTimezone">Asia/Shanghai</span></div></div>
+          <article id="overviewNotice" class="overview-hero">
+            <div class="hero-copy"><span class="hero-pulse" aria-hidden="true"></span><h2 id="overviewHook" role="status" aria-live="polite">正在检查设备连接…</h2></div>
+            <time id="overviewUpdated" class="overview-updated">正在更新…</time>
+            <div class="hero-actions"><button class="button button-primary" type="button" data-overview-page="monitor">进入实时监测</button><button class="text-button" type="button" data-overview-page="alerts">查看告警记录</button></div>
+          </article>
+          <div class="metric-grid overview-metrics" aria-label="今日关键指标">
+            <article class="metric-card metric-card-accent"><div class="metric-top"><span class="metric-label">设备状态</span><span class="metric-index">01</span></div><div id="device" class="metric-value">检查中</div><p id="deviceNote" class="metric-note">正在检查设备连接</p><div class="metric-line"><span></span></div></article>
+            <article class="metric-card"><div class="metric-top"><span class="metric-label">今日预警</span><span class="metric-index">02</span></div><div id="alertCount" class="metric-value">—</div><p id="alertNote" class="metric-note">正在读取今日统计</p><div class="metric-line"><span></span></div></article>
+            <article class="metric-card"><div class="metric-top"><span class="metric-label">今日交互</span><span class="metric-index">03</span></div><div id="voiceCount" class="metric-value">—</div><p id="voiceNote" class="metric-note">正在读取今日统计</p><div class="metric-line"><span></span></div></article>
+            <article class="metric-card metric-card-warm"><div class="metric-top"><span class="metric-label">视觉模型</span><span class="metric-index">04</span></div><div id="model" class="metric-value">检查中</div><p id="modelNote" class="metric-note">正在检查检测模式</p><div class="metric-line"><span></span></div></article>
+          </div>
+          <div class="overview-grid">
+            <article class="panel trend-panel"><div class="panel-heading"><div><p class="panel-kicker">活动趋势</p><h2>近 7 天预警趋势</h2><p id="overviewTrendSummary">正在读取统计</p></div><div class="overview-legend"><span><i></i>实际采集</span><span class="simulation"><i></i>模拟设备</span></div></div><div id="overviewTrend" class="overview-chart">正在加载预警趋势…</div></article>
+            <article class="panel status-panel"><div class="panel-heading"><div><p class="panel-kicker">系统健康</p><h2>运行状态</h2></div><button class="text-button" type="button" data-overview-page="monitor">查看监测 <span aria-hidden="true">→</span></button></div><ul class="overview-status-list"><li><span class="status-icon">↗</span><div><strong>后端服务</strong><p id="overviewBackendDetail">正在检查连接</p></div><span id="overviewBackendState" class="overview-state">检查中</span></li><li><span class="status-icon">◌</span><div><strong>YOLO 检测模型</strong><p id="overviewYoloDetail">正在检查模型</p></div><span id="overviewYoloState" class="overview-state">检查中</span></li><li><span class="status-icon">✦</span><div><strong>对话 / 识字模型</strong><p id="overviewLlmDetail">正在检查模型服务</p></div><span id="overviewLlmState" class="overview-state">检查中</span></li><li><span class="status-icon">⌁</span><div><strong>本地摄像头</strong><p id="overviewCameraDetail">在实时环境监测中开启</p></div><span id="overviewCameraState" class="overview-state">未开启</span></li><li><span class="status-icon">▣</span><div><strong>帽子设备</strong><p id="overviewDeviceDetail">正在检查设备连接</p></div><span id="overviewDeviceState" class="overview-state">检查中</span></li></ul></article>
+            <article class="panel records-panel"><div class="panel-heading"><div><p class="panel-kicker">待处理</p><h2>最近预警</h2></div><button class="text-button" type="button" data-overview-page="alerts">全部记录 <span aria-hidden="true">→</span></button></div><ul id="overviewAlerts" class="overview-records"><li class="overview-empty">正在读取预警记录…</li></ul></article>
+            <article class="panel records-panel"><div class="panel-heading"><div><p class="panel-kicker">交互记录</p><h2>最近交互</h2></div><button class="text-button" type="button" data-overview-page="textReader">全部记录 <span aria-hidden="true">→</span></button></div><ul id="overviewVoices" class="overview-records"><li class="overview-empty">正在读取交互记录…</li></ul></article>
+          </div>
+        </section>
+
+        <section id="monitor" class="page" aria-labelledby="monitorTitle"><div class="page-intro page-intro-compact"><div><p class="eyebrow">实时环境</p><h1 id="monitorTitle" tabindex="-1">实时监测</h1><p class="page-lede">选择画面来源，检测、空间风险与语音播报会同步更新。</p></div><span id="cameraStatus" class="page-status" role="status" aria-live="polite">摄像头未启动</span></div><article class="monitor-card panel"><div class="monitor-toolbar"><div class="camera-actions" role="group" aria-label="摄像头与物品播报"><label class="control-label" for="cameraSelect">画面来源</label><select id="cameraSelect" aria-label="选择摄像头画面来源"><option value="local:">默认电脑摄像头</option><option value="remote:esp32s3_cam_001">ESP32 帽端摄像头（等待画面）</option></select><button class="button button-primary" id="cameraStart" type="button">启动摄像头</button><button class="button button-quiet" id="cameraStop" type="button" disabled>停止</button><label class="toggle-control"><input id="cameraSpeechEnabled" type="checkbox" role="switch" checked><span class="toggle-track" aria-hidden="true"></span><span>语音播报</span></label><button class="button button-quiet" id="cameraSpeechTest" type="button">测试播报</button></div><div class="camera-actions voice-input-actions" role="group" aria-label="语音对话"><span class="control-label">语音对话</span><select id="voiceInputSource" aria-label="选择语音输入来源"><option value="computer">电脑麦克风</option><option value="hat" disabled>帽端麦克风（硬件接入后启用）</option></select><button class="button button-secondary" id="voiceInputToggle" type="button">启动语音对话</button><span id="voiceInputStatus" class="voice-input-status" role="status" aria-live="polite">电脑麦克风未启动</span></div><div class="voice-input-readout" aria-live="polite"><span id="voiceInputTranscript">语音转写会显示在这里</span><span id="voiceInputReply"></span></div></div><div class="camera-mode-switch" role="group" aria-label="摄像头分析视图"><button id="cameraModeOriginal" class="camera-mode-button is-active" type="button" data-camera-mode="original" aria-pressed="true">原始画面</button><button id="cameraModeDetection" class="camera-mode-button" type="button" data-camera-mode="detection" aria-pressed="false">目标检测</button><button id="cameraModeCompare" class="camera-mode-button" type="button" data-camera-mode="compare" aria-pressed="false">深度对照</button></div><div id="cameraStage" class="camera-stage"><button id="cameraFullscreen" class="camera-fullscreen" type="button" aria-pressed="false" disabled>全屏查看</button><video id="cameraVideo" autoplay muted playsinline></video><img id="cameraRemote" alt="所选设备上传的实时画面" hidden><canvas class="detection-overlay" id="cameraOverlay"></canvas><div id="cameraPlaceholder" class="camera-placeholder"><span class="camera-radar" aria-hidden="true"><i></i><b></b></span><strong id="cameraPlaceholderTitle">所选来源画面</strong><span id="cameraPlaceholderHint">选择画面来源后，点击上方按钮开始查看</span></div><div class="camera-overlay"><span id="cameraLive" class="live-dot">● 未连接</span><span id="cameraFps">等待画面</span></div><div class="camera-corner camera-corner-tl"></div><div class="camera-corner camera-corner-tr"></div><div class="camera-corner camera-corner-bl"></div><div class="camera-corner camera-corner-br"></div></div><div id="cameraCompare" class="camera-compare" role="region" aria-label="同一帧的检测与深度对照" hidden><div class="compare-heading"><strong>同帧空间对照</strong><span id="compareFrameMeta">等待相同帧的检测与深度结果</span></div><div class="compare-panes"><section class="compare-pane" aria-label="目标检测画面"><div class="compare-pane-label"><span>01 / 目标检测</span><span>点击目标查看对应深度</span></div><div class="compare-canvas-wrap"><img id="compareOriginal" alt="同帧摄像头画面及检测框" hidden><canvas id="compareDetectionOverlay" class="compare-overlay" aria-label="目标检测框；点击目标查看空间信息"></canvas><div id="compareOriginalPlaceholder" class="compare-placeholder">等待同帧检测画面</div></div></section><section class="compare-pane" aria-label="相对深度图"><div class="compare-pane-label"><span>02 / 相对深度</span><span id="compareDepthFrame">暖色较近 · 冷色较远</span></div><div class="compare-canvas-wrap"><img id="compareDepth" alt="同帧相对深度图" hidden><canvas id="compareDepthOverlay" class="compare-overlay" aria-hidden="true"></canvas><div id="compareDepthPlaceholder" class="compare-placeholder">等待同帧深度结果</div></div></section></div><div id="compareTargets" class="compare-targets" role="group" aria-label="选择检测目标"></div><div class="compare-target-detail" aria-live="polite"><strong id="compareTargetName">尚未选择目标</strong><span id="compareTargetDirection">点击左侧检测框，查看方位</span><span id="compareTargetDepth">相对深度将在目标深度分析完成后显示</span><span id="compareTargetRisk">当前风险等级等待评估</span></div><p class="compare-footnote">相对深度用于比较画面内远近，不代表实际米数；风险等级为系统内部评估。</p></div><div class="monitor-footer"><div class="monitor-readout"><p class="panel-kicker">检测结果</p><p id="detection" class="monitor-primary-readout" role="status" aria-live="polite">检测结果将在摄像头启动后显示</p><div id="objects"></div><p id="monitorText" class="muted"></p><div id="monitorObjects"></div></div><div class="monitor-readout monitor-readout-right"><p class="panel-kicker">播报状态</p><p id="speechStatus" class="monitor-primary-readout" role="status" aria-live="polite">启动摄像头后，将自动用中文播报识别到的物品</p><div class="wifi-location"><strong>ESP32 Wi-Fi 粗略定位</strong><span id="wifiLocationStatus" class="muted">选择并启动帽端监测后读取</span><span id="wifiLocationDetail" class="muted">仅发送热点 MAC 地址和信号强度至 BeaconDB，不发送 Wi-Fi 名称或密码；结果为粗略估算</span></div></div></div><div class="spatial-workbench" aria-label="空间感知与风险状态"><div class="spatial-card"><span class="panel-kicker">深度估计</span><strong id="depthStatus">等待同帧深度结果</strong><img id="depthPreview" class="depth-preview" alt="所选摄像头的相对深度可视化" hidden><span id="depthMeta" class="muted">Depth Anything V2 Small · 相对深度</span></div><div class="spatial-card"><span class="panel-kicker">当前最高风险</span><strong id="riskStatus">L0 · 等待检测</strong><span id="riskReasons" class="muted">风险评分仅用于系统内部决策</span></div><div class="spatial-card"><span class="panel-kicker">运行性能</span><strong id="performanceStatus">等待统计</strong><span id="performanceMeta" class="muted">YOLO / 深度 / 风险耗时来自真实运行计时</span></div><div class="spatial-card spatial-events"><span class="panel-kicker">空间对象</span><div id="spatialObjects" class="spatial-object-list"><span class="muted">启动摄像头后显示目标、方位、深度等级和跟踪状态</span></div><span class="panel-kicker alert-history-kicker">最近预警</span><div id="spatialAlertEvents" class="spatial-alert-events"><span class="muted">尚无预警事件</span></div></div></div></article></section>
+
+        <section id="textReader" class="page" aria-labelledby="textReaderTitle">
+          <div class="page-intro page-intro-compact">
+            <div><p class="eyebrow">多模态交互</p><h1 id="textReaderTitle" tabindex="-1">语音与识字</h1><p class="page-lede">由意图识别选择处理链路，再结合当前帧识别结果与场景描述生成回复。</p></div>
+            <span id="ocrCameraStatus" class="page-status" role="status" aria-live="polite">摄像头未启动</span>
+          </div>
+          <article class="voice-vision-hero panel">
+            <div><p class="panel-kicker">当前运行模式</p><h2 id="voiceVisionMode">等待选择画面来源</h2><p>帽端来源标为实机；电脑摄像头和上传图片标为软件联调；模拟设备单独标为模拟。</p></div>
+            <div id="voiceVisionCapabilities" class="voice-capabilities" aria-label="能力状态">正在检查意图、检测、视觉和语音能力…</div>
+          </article>
+          <div class="ocr-page-grid">
+            <article class="panel ocr-capture-panel" aria-labelledby="ocrCaptureTitle">
+              <div class="ocr-panel-head"><div><p class="panel-kicker">实时取景</p><h2 id="ocrCaptureTitle">摄像头画面</h2></div><span class="ocr-live-badge"><i aria-hidden="true"></i>当前来源</span></div>
+              <div class="ocr-source-controls" role="group" aria-label="文字识别画面来源">
+                <label class="control-label" for="ocrCameraSelect">画面来源</label>
+                <select id="ocrCameraSelect" aria-label="选择文字识别画面来源"><option value="local:">默认电脑摄像头</option><option value="remote:esp32s3_cam_001">ESP32 帽端摄像头（等待画面）</option></select>
+                <button class="button button-secondary" id="ocrCameraStart" type="button">启动电脑摄像头</button>
+                <button class="button button-quiet" id="ocrCameraStop" type="button" disabled>停止查看</button>
+              </div>
+              <p class="ocr-preview-note">识字前请让文字完整进入画面</p>
+              <div class="ocr-preview-frame" aria-label="实时摄像头预览">
+                <canvas id="ocrPreviewCanvas" aria-label="所选来源的实时画面" hidden></canvas>
+                <div class="ocr-preview-placeholder" id="ocrPreviewPlaceholder"><span class="camera-radar" aria-hidden="true"><i></i><b></b></span><strong>等待摄像头画面</strong><p id="ocrPreviewHint">选择画面来源并启动摄像头后开始识字。</p></div>
+                <span id="ocrOverlayLegend" class="ocr-overlay-legend" role="status" aria-live="polite" hidden><i aria-hidden="true"></i><span id="ocrOverlayCount"></span></span>
+                <button id="ocrResumeLive" class="ocr-resume-live" type="button" hidden>返回实时画面</button>
+              </div>
+              <button class="button button-primary ocr-capture-button" id="ocrCapture" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5h3l1.5-2h7l1.5 2h3A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-9A1.5 1.5 0 0 1 5.5 7Z"></path><circle cx="12" cy="13" r="3.2"></circle></svg><span>识字并朗读</span></button>
+              <label class="voice-upload-control" for="voiceVisionUpload"><span id="voiceVisionUploadName">也可以上传图片进行软件联调</span><input id="voiceVisionUpload" type="file" accept="image/jpeg,image/png"></label>
+            </article>
+            <article class="panel ocr-result-panel" aria-labelledby="ocrResultTitle">
+              <div class="ocr-panel-head"><div><p class="panel-kicker">识别内容</p><h2 id="ocrResultTitle">识别结果</h2></div><span class="ocr-read-badge">中文朗读</span></div>
+              <p id="ocrStatus" class="ocr-status" role="status" aria-live="polite">对准文字后，点击“识字并朗读”</p>
+              <div id="ocrEmptyState" class="ocr-empty-state"><span class="ocr-empty-mark" aria-hidden="true">文</span><p>识别结果会显示在这里</p><span>拍摄纸张、说明书或路牌文字后，系统会自动朗读。</span></div>
+              <div id="ocrResults" class="ocr-result-body" hidden><pre id="ocrText" aria-label="识别文字"></pre></div>
+              <div class="ocr-reader-controls" role="group" aria-label="朗读控制"><button class="button button-secondary" id="ocrReplay" type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 11a7 7 0 1 0 1 4M19 4v7h-7"></path></svg>重新朗读</button><button class="button button-quiet" id="ocrStop" type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>停止</button></div>
+              <p class="ocr-reading-note">识别文字会保留在此处，可随时重新朗读。</p>
+            </article>
+          </div>
+          <div class="voice-vision-grid">
+            <article class="panel voice-question-panel" hidden>
+              <div class="panel-heading"><div><p class="panel-kicker">意图路由与回复组织</p><h2>询问当前画面</h2><p>环境问题会使用同一帧 YOLO 结果与 VLM 场景描述；VLM 不代替意图识别。</p></div><span id="voiceVisionSource" class="voice-source-tag">软件联调</span></div>
+              <form id="voiceVisionForm" class="voice-question-form"><label class="sr-only" for="voiceVisionQuestion">画面问题</label><textarea id="voiceVisionQuestion" maxlength="500" placeholder="例如：前面有什么？或描述一下这个画面"></textarea><div class="voice-question-actions"><button class="button button-secondary" id="voiceVisionDescribe" type="button">描述当前画面</button><button class="button button-primary" id="voiceVisionSubmit" type="submit">提交问题</button></div></form>
+              <p id="voiceVisionTaskStatus" class="voice-task-status" role="status" aria-live="polite">先启动画面来源，再提问或上传图片。</p>
+              <div class="voice-reply-card" id="voiceVisionReplyPanel"><div class="voice-reply-head"><strong id="voiceVisionIntent">尚未识别意图</strong><span id="voiceVisionModel">视觉模型未参与</span></div><p id="voiceVisionReply">识别与场景理解结果会在这里合成为面向用户的回复。</p><div class="voice-reply-actions"><button class="button button-quiet" id="voiceVisionReplay" type="button" disabled>重新朗读</button><button class="button button-quiet" id="voiceVisionStop" type="button">停止等待 / 播放</button><small id="voiceVisionLatency">等待任务</small></div></div>
+              <div class="voice-evidence-grid"><div><strong>YOLO 识别结果</strong><pre id="voiceVisionDetection">等待当前帧检测</pre></div><div><strong>VLM 场景描述</strong><pre id="voiceVisionScene">只在需要场景语义时调用；不会推断距离或安全结论。</pre></div></div>
+            </article>
+            <article class="panel voice-trace-panel"><div class="panel-heading"><div><p class="panel-kicker">可追溯处理链</p><h2>任务状态</h2></div></div><div id="voiceVisionStages" class="voice-stage-list"><div class="voice-stage"><strong>意图</strong><span>等待</span></div><div class="voice-stage"><strong>YOLO</strong><span>等待</span></div><div class="voice-stage"><strong>VLM</strong><span>等待</span></div><div class="voice-stage"><strong>回复</strong><span>等待</span></div><div class="voice-stage"><strong>朗读</strong><span>等待</span></div></div><p class="voice-safety-note">VLM 只补充画面语义。目标与方位以对应帧的检测结果为依据；页面不提供真实距离、碰撞时间或安全保证。</p></article>
+          </div>
+          <article class="panel voice-history-panel"><div class="table-toolbar"><div><p class="panel-kicker">可回看任务</p><h2>最近语音与识字任务</h2></div><label class="voice-history-filter">来源筛选<select id="voiceVisionFilter"><option value="all">全部来源</option><option value="hardware">实机</option><option value="software">软件联调</option><option value="simulation">模拟</option></select></label></div><div id="voiceVisionHistory" class="voice-history-list" aria-live="polite">正在读取任务记录…</div></article>
+          <article class="panel voice-history-panel legacy-voice-history"><div class="table-toolbar"><div><p class="panel-kicker">兼容历史</p><h2>语音问答记录</h2></div><span id="voicesLoadState" class="table-hint" role="status">最近的交互优先显示</span></div><div class="log"><table><thead><tr><th>时间</th><th>用户</th><th>回复</th><th>类型</th><th>状态</th></tr></thead><tbody id="voiceRows"><tr><td colspan="5" class="table-empty">正在读取语音记录…</td></tr></tbody></table></div></article>
+
+        </section>
+
+        <section id="family" class="page" aria-labelledby="familyTitle">
+          <div class="page-intro page-intro-compact"><div><h1 id="familyTitle" tabindex="-1">家属协助</h1><p class="page-lede">授权家属查看帽端画面，并将确认后的留言发送至帽端播报。</p></div><span id="familyDeviceStatus" class="status-tag idle" role="status">等待状态</span></div>
+          <p id="familyError" class="family-feedback" role="alert" hidden></p>
+          <details class="panel family-binding" open>
+            <summary>帽端设备与家属授权</summary>
+            <p class="family-help">首次使用可先添加我的帽端，当前账号即可查看画面和发送留言。需要家属协助时，再填写已注册的家属账号并授权。</p>
+            <form id="familyBindingForm" class="family-binding-form">
+              <label for="familyBindDevice">帽端设备编号<span class="family-device-entry"><input id="familyBindDevice" name="device_id" value="esp32s3_cam_001" maxlength="80" required autocomplete="off"><button id="familyAddDevice" class="button button-secondary" type="button">添加我的帽端</button></span></label>
+              <label for="familyBindUsername">家属账号<input id="familyBindUsername" name="family_username" maxlength="80" required autocomplete="off" placeholder="填写已注册账号"></label>
+              <button id="familyBind" class="button button-primary" type="submit">授权家属</button>
+            </form>
+            <p id="familyBindingStatus" class="family-binding-status" role="status"></p>
+          </details>
+          <div class="family-toolbar"><label for="familyDevice">查看设备<select id="familyDevice" disabled><option value="">暂无已授权设备</option></select></label><button id="familyRefresh" class="button button-secondary" type="button">刷新状态</button></div>
+          <div id="familyEmpty" class="panel family-empty"><strong>还没有添加设备</strong><p>填写帽端设备编号并点击“添加我的帽端”，即可使用当前账号查看画面和发送协助留言。</p></div>
+          <div id="familyContent" hidden>
+            <div class="family-grid">
+              <article class="panel family-panel"><div class="family-panel-heading"><h2>帽端画面</h2><button id="familyPause" class="button button-quiet" type="button" aria-pressed="false">暂停画面</button></div><div class="family-stage"><img id="familyFrame" alt="当前所选帽端摄像头画面" hidden><p id="familyFrameEmpty">等待帽端画面</p></div><div class="family-frame-meta"><span id="familyFrameStatus" role="status">等待帽端画面</span><span>画面取自设备最新上传帧</span></div></article>
+              <article class="panel family-panel"><div class="family-panel-heading"><h2>联系佩戴者</h2></div><p id="familySpeechStatus" class="family-help">等待帽端播报状态</p><div class="family-voice-actions"><button id="familyVoice" class="button button-secondary" type="button" disabled>语音录入</button><button id="familyVoiceStop" class="button button-quiet" type="button" hidden>取消录入</button></div><p id="familyVoiceHint" class="family-help" role="status">语音识别后由帽端合成播报。</p><form id="familyMessageForm" class="family-message-form"><label for="familyDraft">待播报内容<textarea id="familyDraft" rows="5" maxlength="500" placeholder="输入留言，或点击语音录入。确认文字后再发送。" disabled></textarea></label><div class="family-draft-meta"><span id="familyDraftType">文字留言</span><span id="familyDraftCount">0 / 500</span></div><button id="familySend" class="button button-primary" type="submit" disabled>确认并发送</button></form><p id="familyDelivery" class="family-feedback" role="status" hidden></p></article>
+            </div>
+            <article id="familyPermissions" class="panel family-panel family-permissions" hidden><h2>已授权家属</h2><ul id="familyBindings" class="family-bindings"></ul></article>
+            <article class="panel family-panel family-message-panel"><h2>最近协助消息</h2><ul id="familyMessages" class="family-messages"></ul></article>
+          </div>
+        </section>
+
+        <section id="guardPage" class="page guard-page" aria-labelledby="guardTitle">
+          <div class="guard-intro">
+            <div><p class="eyebrow">设备管理 / 出行安全 / 实时环境</p><h1 id="guardTitle" tabindex="-1">远程守护中心</h1><p class="guard-lede">家人的位置、现场画面与重要动态，一屏查看。</p></div>
+            <div class="guard-actions"><label class="sr-only" for="guardDeviceSelect">选择守护设备</label><select id="guardDeviceSelect" class="guard-device-select" aria-label="选择守护设备"><option value="">正在读取设备…</option></select></div>
+          </div>
+          <div class="guard-status-strip" aria-label="当前设备状态">
+            <article class="guard-status-card"><small>设备</small><strong id="guardDeviceState">读取中</strong><span id="guardAddress">地址等待更新</span></article>
+            <article class="guard-status-card"><small>位置</small><strong id="guardLocationState">等待更新</strong><span id="guardLocationNote">等待设备位置</span></article>
+            <article class="guard-status-card"><small>现场画面</small><strong id="guardVideoState">未连接</strong><span id="guardShareState">共享状态读取中</span></article>
+            <article class="guard-status-card"><small>出行</small><strong id="guardNavState">未导航</strong><span id="guardNavNote">当前没有进行中的路线</span></article>
+          </div>
+          <div class="guard-workbench">
+            <article class="guard-map-panel">
+              <div class="guard-panel-head"><div><h2>实时位置</h2><p id="guardUpdated">等待位置数据</p></div><span id="guardMode" class="guard-mode-badge">等待定位</span></div>
+              <div id="guardMap" class="guard-map" role="region" aria-label="当前设备位置地图"><div id="guardMapEmpty" class="guard-map-empty">等待可用的位置和地图服务</div><svg class="guard-map-route" viewBox="0 0 500 360" aria-hidden="true"><path id="guardRoutePath" d=""></path><path id="guardHistoryPath" d=""></path></svg><div id="guardMarker" class="guard-map-marker" hidden></div><div id="guardDestination" class="guard-map-marker destination" hidden></div></div>
+              <div class="guard-actions guard-map-actions"><button id="guardUseLocation" class="button button-secondary" type="button" hidden>启用本机定位</button><button id="guardHistoryToggle" class="button button-secondary" type="button">查看轨迹</button><button id="guardRefreshLocation" class="button button-quiet" type="button">刷新位置</button><button id="guardShareToggle" class="button button-quiet" type="button" data-enabled="true" hidden>暂停共享</button></div>
+              <p id="guardLocationSourceStatus" class="guard-map-note" role="status">设备所有者进入本页后自动获取本机定位；首次会请求浏览器权限。家属可见性遵循设备共享设置。</p>
+            </article>
+            <div class="guard-live-column">
+              <article class="guard-video-panel">
+                <div class="guard-panel-head"><div><h2>佩戴者第一视角</h2><p>实时查看现场环境</p></div><span id="guardVideoBadge" class="guard-mode-badge">未连接</span></div>
+                <div class="guard-video-stage"><div id="guardVideoPlaceholder" class="guard-video-placeholder"><div><strong>画面暂不可用</strong>设备连接后，现场画面会显示在这里。</div></div><img id="guardVideo" alt="已授权设备的实时第一视角画面" hidden><div id="guardVideoOverlay" class="guard-video-overlay" hidden><span>实时画面</span><span>当前帧</span></div></div>
+                <div class="guard-video-meta"><span id="guardVideoMeta">画面状态以设备最新画面为准</span><span><button id="guardVideoFullscreen" class="button button-quiet" type="button">全屏查看</button> <button id="guardStartVideo" class="button button-secondary" type="button">查看画面</button> <button id="guardStopVideo" class="button button-quiet" type="button" hidden>停止查看</button></span></div>
+              </article>
+              <article class="guard-environment-panel"><div class="guard-panel-head"><div><h2>实时环境识别</h2><p>显示设备最近一次实际识别结果</p></div></div><ul class="guard-environment-list"><li class="guard-environment-item"><div><small>当前识别</small><strong id="guardEnvironmentState">等待画面</strong><p id="guardEnvironmentDetail">收到识别结果后显示</p></div></li><li class="guard-environment-item"><div><small>最近预警</small><strong id="guardWarningState">暂无预警</strong><p id="guardWarningDetail">有需要留意的情况时会显示在这里</p></div></li></ul></article>
+            </div>
+          </div>
+          <article class="guard-events-panel"><div class="guard-panel-head"><div><h2>最近动态</h2><p>位置变化、环境预警和出行进度</p></div><label class="guard-event-filter" for="guardEventFilter">筛选<select id="guardEventFilter"><option value="all">全部动态</option><option value="warning">环境预警</option><option value="navigation">导航动态</option></select></label></div><ul id="guardTimeline" class="guard-events"><li class="guard-event guard-event-empty"><time>—</time><div><strong>暂无动态</strong><p>设备上线或出现重要变化后会显示在这里。</p></div></li></ul></article>
+        </section>
+
+        <section id="assistantPage" class="page assistant-page" aria-labelledby="assistantTitle">
+          <div class="assistant-intro">
+            <div><p class="eyebrow">语音查询 / 地点搜索 / 智能导航</p><h1 id="assistantTitle" tabindex="-1">AI 地图助手</h1><p class="assistant-lede">说出或输入目的地，查看附近地点并规划出行路线。</p></div>
+            <div class="assistant-intro-meta"><span>佩戴者</span><strong id="assistantDeviceName" class="assistant-device-name">当前设备</strong></div>
+          </div>
+          <div class="assistant-workbench">
+            <article class="assistant-chat-panel">
+              <div class="guard-panel-head"><div><h2>语音交互</h2><p>语音转写后可先修改文字，再提交查询。</p></div></div>
+              <div class="assistant-chat-body">
+                <div class="guard-quick-actions" aria-label="快捷地图查询"><button type="button" data-guard-query="我现在在哪个街区？">当前位置</button><button type="button" data-guard-query="附近有没有医院？">附近医院</button><button type="button" data-guard-query="附近有没有公交站？">附近公交站</button><button type="button" data-guard-query="附近有没有便利店？">附近便利店</button><button type="button" data-guard-query="取消导航">取消导航</button></div>
+                <div id="guardChat" class="guard-chat" role="log" aria-live="polite"><p>你好，我可以帮你查找附近设施、了解当前位置或规划步行路线。</p></div>
+                <div id="guardPoiResults" class="guard-poi-results" aria-live="polite"></div>
+                <form id="guardAssistantForm" class="guard-assistant-form"><label class="sr-only" for="guardAssistantInput">目的地或地图问题</label><input id="guardAssistantInput" maxlength="500" placeholder="你想去哪里？" autocomplete="off"><button class="button button-secondary" id="guardMic" type="button" aria-label="语音输入">语音输入</button><button class="button button-primary" type="submit">查询</button></form>
+                <p id="guardVoiceStatus" class="guard-note" role="status">可以输入问题，或按语音输入开始说话。</p>
+                <p id="assistantNavState" class="assistant-route-summary">尚未规划路线</p>
+              </div>
+            </article>
+            <article class="assistant-map-panel"><div class="guard-panel-head"><div><h2>地图与路线</h2><p>显示当前定位、搜索结果和步行路线</p></div></div><div id="assistantMap" class="assistant-map" role="region" aria-label="地图查询结果"><div id="assistantMapState" class="assistant-map-state">等待当前位置</div></div><div id="assistantRouteSummary" class="assistant-route-summary"><strong>出行路线</strong>尚未规划路线</div></article>
+          </div>
+        </section>
+        <section id="alerts" class="page" aria-labelledby="alertsTitle"><div class="page-intro page-intro-compact"><div><p class="eyebrow">事件记录</p><h1 id="alertsTitle" tabindex="-1">告警记录</h1><p class="page-lede">查看告警时间、目标、方位与播报内容，模拟设备会单独标记。</p></div><a class="button button-secondary" href="/api/export/obstacles.xlsx"><svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 15v5h16v-5"/></svg>导出 Excel</a></div><article class="panel table-panel"><div class="table-toolbar"><div><p class="panel-kicker">告警记录</p><h2>障碍物预警</h2></div><span id="alertsLoadState" class="table-hint" role="status">按最新发生时间排列</span></div><div class="log"><table class="alerts-table"><colgroup><col class="alert-col-time"><col class="alert-col-target"><col class="alert-col-direction"><col class="alert-col-message"></colgroup><thead><tr><th scope="col">时间</th><th scope="col">目标</th><th scope="col">方位</th><th scope="col">播报</th></tr></thead><tbody id="alertRows"><tr><td colspan="4" class="table-empty">正在读取预警记录…</td></tr></tbody></table></div></article></section>
+        <section id="devices" class="page" aria-labelledby="devicesTitle"><div class="page-intro page-intro-compact"><div><p class="eyebrow">设备设置</p><h1 id="devicesTitle" tabindex="-1">设备与参数</h1><p class="page-lede">查看心跳状态，再调整识别与播报策略。</p></div></div><div class="settings-grid"><article class="panel device-panel"><div class="panel-heading"><div><p class="panel-kicker">设备列表</p><h2>设备状态</h2></div><span id="deviceLoadState" class="panel-badge" role="status">实时</span></div><div id="deviceList" class="device-list muted">暂无设备</div></article><form id="configForm" class="panel settings-panel" novalidate><div class="panel-heading"><div><p class="panel-kicker">运行策略</p><h2>系统参数</h2></div></div><div class="field-grid"><label for="confidence">检测置信度<span class="input-group"><input id="confidence" type="number" min="0" max="1" step="any" required aria-describedby="confidenceHelp"><span class="input-suffix" aria-hidden="true">0–1</span></span><small id="confidenceHelp">低于此值的目标不进入预警</small></label><label for="cooldown">预警冷却时间<span class="input-group"><input id="cooldown" type="number" min="1" step="1" required aria-describedby="cooldownHelp"><span class="input-suffix" aria-hidden="true">毫秒</span></span><small id="cooldownHelp">同一目标的最短播报间隔</small></label></div><div class="check-grid"><label class="check-control"><input id="obstacle" type="checkbox"><span>启用障碍物预警</span></label><label class="check-control"><input id="voice" type="checkbox"><span>启用语音交互</span></label></div><div class="form-actions"><button class="button button-primary" id="saveConfig" type="submit">保存设置</button><span id="saveMsg" class="muted" role="status" aria-live="polite"></span></div></form></div></section>
+        <section id="debug" class="page" aria-labelledby="debugTitle"><div class="page-intro page-intro-compact"><div><p class="eyebrow">仅供开发调试</p><h1 id="debugTitle" tabindex="-1">开发者诊断</h1><p class="page-lede">模拟场景和设备状态控制集中在这里，不会出现在家属守护页面。</p></div></div><article class="panel debug-panel"><div class="panel-heading"><div><p class="panel-kicker">位置采集</p><h2>定位来源与演示设备</h2></div></div><div class="debug-form"><label for="guardDiagnosticDevice">当前设备<select id="guardDiagnosticDevice" aria-label="诊断设备"><option value="">正在读取设备…</option></select></label><button class="button button-secondary" id="guardCreateDevice" type="button">添加联调设备</button><button class="button button-quiet" id="guardSimulateStart" type="button">播放模拟路线</button><button class="button button-quiet" id="guardSimulateStop" type="button">停止模拟</button><span id="guardDiagnosticStatus" role="status">选择设备后可控制定位来源。</span></div></article>
+          <article class="panel debug-panel voice-software-test"><div class="panel-heading"><div><p class="panel-kicker">软件联调</p><h2>文本意图测试</h2><p>使用同一意图分类器和任务处理器，不代表帽端录音或扬声器已通过验收。</p></div></div><form id="debugForm" class="debug-form"><label class="sr-only" for="simVoice">测试环境问题</label><input id="simVoice" placeholder="输入：前面有什么？、读一下文字、描述画面" autocomplete="off" required><button class="button button-primary" id="sendVoice" type="submit">运行联调</button></form><div class="console-frame"><div class="console-heading"><span class="console-symbol" aria-hidden="true">&gt;_</span><strong>调试输出</strong><span id="debugState" role="status">等待执行</span></div><pre id="debugOut" class="debug-output" aria-live="polite" aria-busy="false">文本联调会生成带有来源标签的任务记录。</pre></div></article></section>
+      </main>
+    </div>
+  </div>
+
+  <script src="/tts-client.js"></script><script src="/camera-speech.js"></script><script src="/camera-monitor.js"></script><script src="/ocr-reader.js"></script><script src="/voice-vision.js"></script><script src="/voice-input.js"></script><script src="/overview.js"></script><script src="/console-ui.js"></script><script src="/family-assist.js"></script><script src="/remote-guard.js"></script>
+  <script>
+    const $ = id => document.getElementById(id); const cameraSpeech = QimingCameraSpeech.create({onStatus: message => {$('speechStatus').textContent = message;}}); let ws;
+    const pageLabels = {overview: '系统总览', monitor: '实时监测', textReader: '语音与识字', family: '家属协助', guardPage: '远程守护', assistantPage: 'AI 地图助手', alerts: '告警记录', voices: '语音与识字', devices: '设备与参数', debug: '开发者诊断'};
+    window.qimingCameraSpeech = cameraSpeech;
+    window.familyAssist = QimingFamilyAssist.mount();
+    window.remoteGuard = QimingRemoteGuard.mount();
+    const a11ySettings = {large: 'qh_a11y_large', contrast: 'qh_a11y_contrast', motion: 'qh_a11y_motion'};
+    function applyA11ySetting(name, enabled) { document.documentElement.classList.toggle('a11y-' + name, enabled); if (name === 'motion') document.documentElement.classList.toggle('a11y-reduced-motion', enabled); localStorage.setItem(a11ySettings[name], enabled ? '1' : '0'); }
+    document.querySelectorAll('[data-a11y]').forEach(input => { const name = input.dataset.a11y; const enabled = name === 'motion' ? localStorage.getItem(a11ySettings[name]) === '1' : localStorage.getItem(a11ySettings[name]) === '1'; input.checked = enabled; applyA11ySetting(name, enabled); input.onchange = () => applyA11ySetting(name, input.checked); });
+    const logoutButton = document.createElement('button'); logoutButton.id = 'logoutButton'; logoutButton.type = 'button'; logoutButton.textContent = '退出'; logoutButton.title = '退出当前账号'; logoutButton.setAttribute('aria-label', '退出当前账号'); logoutButton.className = 'logout-button'; document.querySelector('.topbar-actions').append(logoutButton);
+    logoutButton.onclick = async () => { stopCamera(false); logoutButton.disabled = true; try { const token = sessionStorage.getItem('qh_token') || localStorage.getItem('qh_token'); await fetch('/api/auth/logout', {method: 'POST', headers: token ? {Authorization: 'Bearer ' + token} : {}}); } finally { sessionStorage.removeItem('qh_token'); localStorage.removeItem('qh_token'); document.cookie = 'qh_token=; Path=/; Max-Age=0'; location.replace('/'); } };
+    function selectPage(page) { document.querySelectorAll('.nav-item,.page').forEach(x => x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(x => x.removeAttribute('aria-current')); const nav = document.querySelector('.nav-item[data-page="' + page + '"]'); if (nav) { nav.classList.add('active'); nav.setAttribute('aria-current', 'page'); } const view = $(page); if (view) { view.classList.add('active'); const title = view.querySelector('h1'); if (title) requestAnimationFrame(() => title.focus({preventScroll: true})); } $('currentPageLabel').textContent = pageLabels[page] || page; document.title = (pageLabels[page] || page) + ' · 启明控制台'; window.familyAssist?.setActive(page === 'family'); if (page === 'guardPage' || page === 'assistantPage') window.dispatchEvent(new Event('qiming-guard-activate')); setOCRPreviewActive(page === 'textReader'); }
+    document.querySelectorAll('.nav-item').forEach(button => button.onclick = () => selectPage(button.dataset.page));
+    const cameraMonitor = QimingCameraMonitor.mount({objectSpeech: cameraSpeech}); window.cameraMonitor = cameraMonitor;
+    const voiceVision = QimingVoiceVision.mount({cameraMonitor}); window.voiceVision = voiceVision; window.voiceInput = new QimingVoiceInput.VoiceInputController({cameraMonitor});
+    const consoleUI = QimingConsoleUI.mount({getVoiceVisionContext: () => ({source_id: cameraMonitor.sourceId, source_mode: cameraMonitor.sourceId.startsWith('simulator_') ? 'simulation' : cameraMonitor.sourceId === 'local_camera' ? 'software' : 'hardware'}), onConfig: config => { cameraSpeech.configure(config); $('cameraSpeechEnabled').checked = config.speech_enabled !== false; $('cameraSpeechTest').disabled = !cameraSpeech.supported || config.speech_enabled === false; }});
+    async function refresh() { await consoleUI.refresh(); }
+    function connect() { ws = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws/web`); ws.onopen = () => {$('conn').innerHTML = '<i></i>后端已连接'; $('conn').className = 'connection-pill is-ready';}; ws.onclose = () => { cameraSpeech.reset(); $('conn').innerHTML = '<i></i>连接断开'; $('conn').className = 'connection-pill is-error'; setTimeout(connect, 2000); }; ws.onmessage = e => { let x; try { x = JSON.parse(e.data); } catch (_) { return; } if (x.type === 'device_status') window.dispatchEvent(new Event('qiming-device-status')); if (x.type === 'detection_update') cameraMonitor.handleDetection(x); if (x.type === 'spatial_update') cameraMonitor.handleSpatial(x); if (x.type === 'obstacle_alert') cameraMonitor.handleAlert(x); if (x.type === 'tts_playback_status') { voiceVision.handleTtsEvent(x); window.ocrReader?.handleTtsEvent(x); } }; }
+    document.querySelectorAll('[data-overview-page]').forEach(button => button.onclick = () => selectPage(button.dataset.overviewPage));
+    refresh().catch(() => {}); connect(); setInterval(() => refresh().catch(() => {}), 5000); function stopCamera(update = true) { cameraMonitor.stop(update); } cameraSpeech.setEnabled($('cameraSpeechEnabled').checked);
+    $('cameraSpeechEnabled').onchange = async () => { const enabled = $('cameraSpeechEnabled').checked; $('cameraSpeechEnabled').disabled = true; try { const response = await fetch('/api/config', {method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({speech_enabled: enabled})}); if (!response.ok) throw new Error('保存失败'); cameraSpeech.configure(await response.json()); cameraSpeech.setEnabled(enabled); $('speechStatus').textContent = enabled ? '电脑与帽端 Edge TTS 语音播报已开启' : '电脑与帽端语音播报已关闭'; } catch (error) { $('cameraSpeechEnabled').checked = !enabled; $('speechStatus').textContent = '语音设置保存失败，请重试'; } finally { $('cameraSpeechEnabled').disabled = false; } }; $('cameraSpeechTest').onclick = () => cameraSpeech.test(); if (!cameraSpeech.supported) { $('cameraSpeechTest').disabled = true; $('speechStatus').textContent = 'Edge TTS 音频服务不可用，请检查电脑后端'; }
+    const ocrPreview = new QimingOCR.Preview({
+  canvas: $('ocrPreviewCanvas'),
+  legend: $('ocrOverlayLegend'),
+  count: $('ocrOverlayCount'),
+  resumeButton: $('ocrResumeLive'),
+});
+const ocrReader = QimingOCR.mount({
+  preview: ocrPreview,
+  panelId: 'textReader',
+  video: $('cameraVideo'),
+  objectSpeech: cameraSpeech,
+  isCameraActive: () => cameraMonitor.active(),
+  captureFrame:()=>cameraMonitor.captureFrame(),
+  getSource: () => ({source_id: cameraMonitor.sourceId, source_mode: cameraMonitor.sourceId.startsWith('simulator_') ? 'simulation' : cameraMonitor.sourceId === 'local_camera' ? 'software' : 'hardware', frame_seq: cameraMonitor.sourceId === 'local_camera' ? null : cameraMonitor.frameSeq}),
+});
+window.ocrReader = ocrReader;
+let ocrPreviewTimer = null;
+function setOCRPreviewActive(active) {
+  window.clearInterval(ocrPreviewTimer);
+  ocrPreviewTimer = null;
+  const canvas = $('ocrPreviewCanvas');
+  const placeholder = $('ocrPreviewPlaceholder');
+  const hint = $('ocrPreviewHint');
+  if (!active) {
+    canvas.hidden = true;
+    placeholder.hidden = false;
+    return;
   }
+  const draw = () => {
+    const ready = ocrPreview.draw(() => cameraMonitor.drawPreview(canvas));
+    canvas.hidden = !ready;
+    placeholder.hidden = ready;
+    if (!ready) {
+      hint.textContent = cameraMonitor.running
+        ? '正在等待所选来源的清晰画面…'
+        : '选择画面来源并启动摄像头后开始识字。';
+    } else if (ocrPreview.frame && !ocrPreview.result) {
+      hint.textContent = '本次截图正在识字，文字框会标在原画面上。';
+    } else if (ocrPreview.frame && ocrPreview.result?.boxes?.length) {
+      hint.textContent = '蓝框标出本次识别的文字区域。';
+    } else if (ocrPreview.frame && ocrPreview.result?.failed) {
+      hint.textContent = '本次识字已中断，可点“返回实时画面”重新取景。';
+    } else if (ocrPreview.frame && ocrPreview.result?.has_text) {
+      hint.textContent = '本次识别服务未返回文字框，可点“返回实时画面”继续取景。';
+    } else if (ocrPreview.frame) {
+      hint.textContent = '本次截图未识别到清晰文字，可点“返回实时画面”重试。';
+    } else {
+      hint.textContent = '画面已连接，可以对准文字拍摄。';
+    }
+  };
+  draw();
+  ocrPreviewTimer = window.setInterval(draw, 250);
 }
-</style>
-
-<style>
-.camera-actions select[hidden]{display:none}
-.camera-stage img{display:none;width:100%;height:100%;object-fit:contain;background:#050d18}
-.camera-stage.active.remote img:not([hidden]){display:block}
-.camera-stage.active.remote video{display:none}
-.wifi-location{display:grid;grid-template-columns:minmax(180px,auto) 1fr;gap:5px 14px;padding:12px 14px;margin:10px 0 12px;border-left:3px solid #55c9ff;background:#0a1b30;color:#e9f4ff}
-.wifi-location strong{grid-row:span 2;font-size:14px;align-self:center}
-.wifi-location span{font-size:12px;overflow-wrap:anywhere}
-@media(max-width:650px){.wifi-location{grid-template-columns:1fr}.wifi-location strong{grid-row:auto}}
-</style>
+QimingOverview.mount({getCamera: () => ({active: Boolean(cameraMonitor.localStream && cameraMonitor.localStream.getVideoTracks().some(track => track.readyState === 'live'))})});
+  </script>
+  <script src="/live-preview.js" defer></script>
+</body>
+</html>

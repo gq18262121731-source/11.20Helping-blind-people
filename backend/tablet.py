@@ -27,12 +27,7 @@ async def tablet_frame(request: Request, source_id: str, seq: int = 0,
     if not image.startswith(b'\xff\xd8') or not image.endswith(b'\xff\xd9'):
         raise HTTPException(status_code=400, detail='需要完整的 JPEG 图像')
     camera_frames.publish(source_id, seq, image)
-    if runtime.image_queue.full():
-        try:
-            runtime.image_queue.get_nowait()
-        except asyncio.QueueEmpty:
-            pass
-    await runtime.image_queue.put((source_id, seq, bytes(image)))
+    runtime.enqueue_frame(source_id, seq, bytes(image))
     return {'accepted': True, 'device_id': source_id, 'seq': seq}
 
 

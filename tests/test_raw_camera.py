@@ -1,5 +1,5 @@
 import asyncio
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from types import SimpleNamespace
 
 import cv2
@@ -12,15 +12,25 @@ from starlette.websockets import WebSocketDisconnect
 from backend import auth, database
 from backend.camera_stream import camera_frames
 from backend.config import settings
+from backend import raw_camera as raw_camera_module
 from backend.raw_camera import (DEFAULT_DEVICE_ID, FRAME_BYTES, MAX_JPEG_BYTES, RawCameraConnection,
                                 grayscale_jpeg, validated_camera_jpeg, router)
 from backend.services import Runtime, runtime
 from backend.tablet import router as tablet_router
-from backend.tts_protocol import speech_command
+from backend.vision import AlertController, ApproachDetector, TrackerAdapter
 
 RAW = np.tile(np.arange(320, dtype=np.uint16) % 256, (240, 1)).astype(np.uint8).tobytes()
 COMPRESSED = cv2.imencode('.jpg', np.frombuffer(RAW, np.uint8).reshape(240, 320),
                          [cv2.IMWRITE_JPEG_QUALITY, 65])[1].tobytes()
+
+
+class FakeTtsDelivery:
+    def __init__(self):
+        self.messages = []
+
+    def queue_text(self, device_id, text, *, priority=1):
+        self.messages.append((device_id, text, priority))
+        return {"status": "synthesizing"}
 
 
 @pytest.fixture
@@ -32,9 +42,13 @@ def camera_client(tmp_path, monkeypatch):
     monkeypatch.setattr(runtime, "latest", {})
     monkeypatch.setattr(runtime, "locations", {})
     monkeypatch.setattr(runtime, "motor_monitor_leases", {})
+    monkeypatch.setattr(runtime, "speech_announced", {})
     monkeypatch.setattr(runtime, "speech_enabled", True)
-    monkeypatch.setattr(RawCameraConnection, "SPEECH_SECONDS_PER_CHARACTER", 0)
-    monkeypatch.setattr(RawCameraConnection, "SPEECH_GAP_SECONDS", 0)
+    monkeypatch.setattr(raw_camera_module, "tts_delivery", FakeTtsDelivery())
+    monkeypatch.setattr(runtime, "tracker", TrackerAdapter())
+    monkeypatch.setattr(runtime, "approach_detector", ApproachDetector())
+    monkeypatch.setattr(runtime, "alert_controller", AlertController())
+    monkeypatch.setattr(runtime, "alert_frame_index", defaultdict(int))
     monkeypatch.setattr(camera_frames, "_frames", OrderedDict())
     database.init_db()
     auth.register_user("cameratest", "camera@example.com", "Camera123")
@@ -188,6 +202,7 @@ def test_real_runtime_alerts_and_manual_commands_use_binary(camera_client, proto
 
 def test_obstacle_alert_forwards_chinese_speech_to_the_camera_device(camera_client):
     client, _ = camera_client
+    tts = raw_camera_module.tts_delivery
     client.portal.call(runtime.set_motor_monitor, "test", DEFAULT_DEVICE_ID, True)
     with client.websocket_connect("/ws/camera?protocol=2") as ws:
         ws.send_bytes(RAW)
@@ -198,7 +213,7 @@ def test_obstacle_alert_forwards_chinese_speech_to_the_camera_device(camera_clie
                            {"type": "obstacle_alert", "device_id": DEFAULT_DEVICE_ID,
                             "vibration": "left", "voice_text": text})
         assert ws.receive_bytes() == b"L"
-        assert ws.receive_bytes() == speech_command(text)
+        assert tts.messages == [(DEFAULT_DEVICE_ID, text, 0)]
 
 
 def test_disabling_hardware_speech_keeps_vibration_alert(monkeypatch):
@@ -233,39 +248,94 @@ def test_obstacle_alert_does_not_vibrate_until_hat_preview_is_started(monkeypatc
     assert socket.sent is None
 
 
-def test_hardware_speech_queue_preserves_order_and_serializes_messages(monkeypatch):
+def test_hardware_speech_uses_tts_queue_without_camera_text_frames(monkeypatch):
     monkeypatch.setattr(runtime, "speech_enabled", True)
-    monkeypatch.setattr(RawCameraConnection, "SPEECH_SECONDS_PER_CHARACTER", 0)
-    monkeypatch.setattr(RawCameraConnection, "SPEECH_GAP_SECONDS", 0)
-
+    tts = FakeTtsDelivery()
+    monkeypatch.setattr(raw_camera_module, "tts_delivery", tts)
     class Socket:
-        def __init__(self):
-            self.sent = []
-
-        async def send_bytes(self, value):
-            self.sent.append(value)
-
-        async def close(self, **kwargs):
-            pass
-
-    async def run():
-        socket = Socket()
-        connection = RawCameraConnection(socket, protocol=2)
-        connection._queue_speech("左侧有行人")
-        connection._queue_speech("右侧有椅子")
-        await asyncio.wait_for(connection._speech_queue.join(), timeout=2)
-        await connection.close()
-        return socket.sent
-
-    assert asyncio.run(run()) == [speech_command("左侧有行人"), speech_command("右侧有椅子")]
+        def __init__(self): self.sent = []
+        async def send_bytes(self, value): self.sent.append(value)
+    socket = Socket()
+    connection = RawCameraConnection(socket, protocol=2)
+    assert connection._queue_speech("左侧有行人")
+    assert connection._queue_speech("右侧有椅子")
+    assert socket.sent == []
+    assert tts.messages == [(DEFAULT_DEVICE_ID, "左侧有行人", 1),
+                            (DEFAULT_DEVICE_ID, "右侧有椅子", 1)]
 
 
-def test_hardware_speech_waits_for_estimated_playback_then_two_seconds():
+def test_detected_objects_are_sent_to_the_protocol2_hat_speaker(monkeypatch):
+    monkeypatch.setattr(runtime, "speech_enabled", True)
+    tts = FakeTtsDelivery()
+    monkeypatch.setattr(raw_camera_module, "tts_delivery", tts)
+    detector = Runtime()
     connection = RawCameraConnection(object(), protocol=2)
-    assert connection._speech_delay("左侧有行人") == 4.0
+    detector.devices[DEFAULT_DEVICE_ID] = connection
+    objects = [{"class": "person", "confidence": 0.95, "direction": "left", "track_id": 7}]
+    assert not detector.announce_objects(DEFAULT_DEVICE_ID, objects, now=1.0)
+    assert detector.announce_objects(DEFAULT_DEVICE_ID, objects, now=1.5)
+    assert tts.messages == [(DEFAULT_DEVICE_ID, "左侧有行人。", 2)]
 
 
-def test_gray_frames_run_through_detector_and_trigger_directional_motors(camera_client, monkeypatch):
+def test_hardware_speech_queue_prioritizes_urgent_alerts(monkeypatch):
+    monkeypatch.setattr(runtime, "speech_enabled", True)
+    tts = FakeTtsDelivery()
+    monkeypatch.setattr(raw_camera_module, "tts_delivery", tts)
+    connection = RawCameraConnection(object(), protocol=2)
+    assert connection._queue_speech("前方有椅子")
+    assert connection._queue_speech("前方有行人，请注意", priority=0)
+    assert tts.messages == [(DEFAULT_DEVICE_ID, "前方有椅子", 1),
+                            (DEFAULT_DEVICE_ID, "前方有行人，请注意", 0)]
+
+
+def test_detector_announces_a_confirmed_object_to_the_hat_speaker(camera_client, monkeypatch):
+    client, _ = camera_client
+
+    class StableModel:
+        names = {0: "cup"}
+
+        def predict(self, image, **kwargs):
+            box = SimpleNamespace(xyxy=np.array([[100, 80, 180, 160]]),
+                                  conf=np.array([0.95]), cls=np.array([0]),
+                                  id=np.array([1]))
+            return [SimpleNamespace(boxes=[box])]
+
+    monkeypatch.setattr(runtime, "model", StableModel())
+    monkeypatch.setattr(runtime, "model_error", None)
+    monkeypatch.setattr(settings, "simulation_mode", False)
+    worker = client.portal.start_task_soon(runtime.detect_loop)
+
+    async def wait_for_sequence(sequence):
+        for _ in range(200):
+            latest = runtime.latest.get(DEFAULT_DEVICE_ID)
+            if latest and latest["result"]["image_seq"] >= sequence:
+                return
+            await asyncio.sleep(0.01)
+        raise AssertionError(f"frame {sequence} was not processed")
+
+    async def wait_for_announcement():
+        for _ in range(200):
+            states = runtime.speech_announced.get(DEFAULT_DEVICE_ID, {}).values()
+            if any(state["spoken"] for state in states):
+                return
+            await asyncio.sleep(0.01)
+        raise AssertionError("detected object was not queued for speech")
+
+    try:
+        with client.websocket_connect("/ws/camera?protocol=2") as ws:
+            for sequence in range(1, 3):
+                ws.send_bytes(RAW)
+                assert ws.receive_text() == "ACK"
+                client.portal.call(wait_for_sequence, sequence)
+            client.portal.call(wait_for_announcement)
+            assert raw_camera_module.tts_delivery.messages == [
+                (DEFAULT_DEVICE_ID, "前方有水杯。", 2),
+            ]
+    finally:
+        worker.cancel()
+
+
+def test_gray_frames_run_through_detector_and_trigger_trend_alerts(camera_client, monkeypatch):
     client, _ = camera_client
 
     class DeterministicModel:
@@ -274,29 +344,46 @@ def test_gray_frames_run_through_detector_and_trigger_directional_motors(camera_
 
         def predict(self, image, **kwargs):
             assert image.shape == (240, 320, 3)
-            x1, x2 = [(10, 60), (130, 190), (260, 310)][self.index]
+            boxes = [
+                (120, 60, 160, 120),
+                (100, 40, 180, 160),
+                (80, 20, 200, 200),
+                (60, 0, 220, 230),
+                (40, 0, 240, 240),
+                (30, 0, 250, 240),
+                (20, 0, 260, 240),
+            ]
+            x1, y1, x2, y2 = boxes[self.index]
             self.index += 1
-            box = SimpleNamespace(xyxy=np.array([[x1, 20, x2, 200]]),
-                                  conf=np.array([0.95]), cls=np.array([0]))
+            box = SimpleNamespace(xyxy=np.array([[x1, y1, x2, y2]]),
+                                  conf=np.array([0.95]), cls=np.array([0]),
+                                  id=np.array([1]))
             return [SimpleNamespace(boxes=[box])]
 
     monkeypatch.setattr(runtime, "model", DeterministicModel())
     monkeypatch.setattr(runtime, "model_error", None)
     monkeypatch.setattr(runtime, "alert_last", {})
     monkeypatch.setattr(runtime, "speech_announced", {})
+    monkeypatch.setattr(runtime, "announce_objects", lambda device_id, objects: False)
     client.portal.call(runtime.set_motor_monitor, "test", DEFAULT_DEVICE_ID, True)
     monkeypatch.setattr(settings, "simulation_mode", False)
     worker = client.portal.start_task_soon(runtime.detect_loop)
     try:
         with client.websocket_connect("/ws/camera?protocol=2") as ws:
-            for index, expected in enumerate([b"L", b"B", b"R"]):
+            expected_message_counts = [1, 1, 1, 2, 1, 1, 2]
+            for index, message_count in enumerate(expected_message_counts):
                 ws.send_bytes(RAW)
-                messages = [ws.receive() for _ in range(3 if index == 0 else 2)]
+                messages = [ws.receive() for _ in range(message_count)]
                 assert any(item.get("text") == "ACK" for item in messages)
-                assert any(item.get("bytes") == expected for item in messages)
-                speech = [item["bytes"] for item in messages
-                          if item.get("bytes", b"").startswith(b"T")]
-                assert speech == ([speech_command("左侧有行人")] if index == 0 else [])
+                commands = [item.get("bytes") for item in messages if item.get("bytes")]
+                if index == 3:
+                    assert b"B" in commands
+                    assert not any(item.startswith(b"T") for item in commands)
+                elif index == 6:
+                    assert b"B" in commands
+                    assert not any(item.startswith(b"T") for item in commands)
+                else:
+                    assert commands == []
     finally:
         worker.cancel()
 

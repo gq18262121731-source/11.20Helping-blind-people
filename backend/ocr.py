@@ -11,6 +11,7 @@ from .config import settings
 MAX_IMAGE_BYTES = 6_000_000
 NO_TEXT = "未识别到清晰文字"
 _recognition_lock = asyncio.Lock()
+_rapid_engine = None
 
 
 class OCRServiceError(Exception):
@@ -38,11 +39,125 @@ def image_mime(image):
 
 async def recognize_text(image):
     mime = image_mime(image)
-    if not (settings.openai_base_url and settings.openai_model):
-        raise OCRServiceError(503, "请先配置并启动支持图片输入的模型，例如 Ollama qwen3-vl:4b")
     if _recognition_lock.locked():
         raise OCRServiceError(429, "已有识字任务正在处理，请稍后重试")
     async with _recognition_lock:
+        if settings.ocr_engine.lower() == "rapidocr":
+            try:
+                rapid_result = await asyncio.to_thread(_recognize_rapidocr, image)
+                # A configured legacy vision endpoint is used only when the
+                # primary detector found no text.  Normal RapidOCR successes
+                # never invoke a second model.
+                if rapid_result.get("has_text") or not (settings.openai_base_url and settings.openai_model):
+                    return rapid_result
+                return await _recognize_legacy_model(image, mime)
+            except ImportError:
+                # Keep existing Ollama installations usable until the optional
+                # ONNX packages are installed; production config should use
+                # OCR_ENGINE=rapidocr and install requirements-conda.txt.
+                if not (settings.openai_base_url and settings.openai_model):
+                    raise OCRServiceError(503, "RapidOCR 未安装，请安装 rapidocr_onnxruntime 和 onnxruntime") from None
+            except OCRServiceError:
+                raise
+            except Exception as error:
+                raise OCRServiceError(502, f"RapidOCR 识别失败: {error}") from None
+        if not (settings.openai_base_url and settings.openai_model):
+            raise OCRServiceError(503, "请先安装 RapidOCR，或配置兼容图片模型作为临时回退")
+        return await _recognize_legacy_model(image, mime)
+
+
+def _rapid_text(result):
+    """Normalize RapidOCR 1.x/2.x result shapes into reading-order text."""
+    return _rapid_text_and_boxes(result)[0]
+
+
+def _rapid_box_points(box):
+    if hasattr(box, "tolist"):
+        box = box.tolist()
+    if not isinstance(box, (list, tuple)) or not box:
+        return []
+    if len(box) == 4 and all(not isinstance(point, (list, tuple)) and not hasattr(point, "__iter__") for point in box):
+        try:
+            left, top, right, bottom = (float(value) for value in box)
+        except (TypeError, ValueError):
+            return []
+        return [[left, top], [right, top], [right, bottom], [left, bottom]]
+    points = []
+    for point in box:
+        if hasattr(point, "tolist"):
+            point = point.tolist()
+        if not isinstance(point, (list, tuple)) or len(point) < 2:
+            continue
+        try:
+            points.append([round(float(point[0]), 2), round(float(point[1]), 2)])
+        except (TypeError, ValueError):
+            continue
+    return points if len(points) >= 4 else []
+
+
+def _rapid_text_and_boxes(result):
+    """Return normalized reading-order text plus RapidOCR's source-image boxes."""
+    items = result[0] if isinstance(result, tuple) and len(result) == 2 else result
+    if items is None:
+        return NO_TEXT, []
+    rows = []
+    for item in items:
+        if isinstance(item, dict):
+            text = item.get("text", "")
+            score = item.get("score", 0)
+            box = item.get("box", item.get("points", []))
+        elif len(item) >= 3:
+            box, text, score = item[0], item[1], item[2]
+        else:
+            continue
+        points = _rapid_box_points(box)
+        if str(text).strip() and float(score or 0) >= 0.25:
+            y = min(point[1] for point in points) if points else 0
+            x = min(point[0] for point in points) if points else 0
+            rows.append((round(y / 12), x, str(text).strip(), float(score or 0), points))
+    if not rows:
+        return NO_TEXT, []
+    rows.sort(key=lambda value: (value[0], value[1]))
+    lines = []
+    last_y = None
+    for y, _, text, _, _ in rows:
+        if lines and last_y is not None and abs(y - last_y) <= 1:
+            lines[-1] += " " + text
+        else:
+            lines.append(text)
+        last_y = y
+    boxes = [
+        {"text": text, "points": points, "confidence": round(score, 3)}
+        for _, _, text, score, points in rows if points
+    ]
+    return "\n".join(lines)[:12_000], boxes
+
+
+def _recognize_rapidocr(image):
+    global _rapid_engine
+    try:
+        if _rapid_engine is None:
+            from rapidocr_onnxruntime import RapidOCR
+            _rapid_engine = RapidOCR()
+    except ImportError:
+        raise
+    try:
+        import cv2
+        import numpy as np
+        decoded = cv2.imdecode(np.frombuffer(image, dtype=np.uint8), cv2.IMREAD_COLOR)
+        if decoded is None:
+            raise ValueError("图片解码失败")
+        result, _ = _rapid_engine(decoded)
+    except TypeError:
+        result, _ = _rapid_engine(image)
+    text, boxes = _rapid_text_and_boxes(result)
+    return {"type": "ocr_result", "text": text, "has_text": text != NO_TEXT,
+            "truncated": False, "model": "rapidocr-onnxruntime",
+            "boxes": boxes, "image_width": int(decoded.shape[1]),
+            "image_height": int(decoded.shape[0])}
+
+
+async def _recognize_legacy_model(image, mime):
         encoded = base64.b64encode(image).decode("ascii")
         payload = {
             "model": settings.openai_model,
@@ -89,8 +204,11 @@ async def recognize_text(image):
         except (KeyError, IndexError, TypeError, ValueError):
             raise OCRServiceError(502, "模型没有返回有效文字，请调整拍摄角度后重试") from None
         found = text.rstrip("。.!！ \n") != NO_TEXT
+        with Image.open(io.BytesIO(image)) as picture:
+            image_width, image_height = picture.size
         return {
             "type": "ocr_result", "text": text, "has_text": found,
             "truncated": choice.get("finish_reason") == "length",
-            "model": settings.openai_model,
+            "model": settings.openai_model, "boxes": [],
+            "image_width": image_width, "image_height": image_height,
         }

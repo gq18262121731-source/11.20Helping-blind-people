@@ -8,9 +8,9 @@
 #include "esp_timer.h"
 #include "driver/gpio.h"
 #include "config.h"
+#include "tts_player.h"
 
 WebSocketsClient webSocket;
-HardwareSerial ttsSerial(1);
 bool cameraReady = false;
 bool socketConnected = false;
 bool awaitingAck = false;
@@ -110,19 +110,6 @@ void updateMotors() {
   if (motorActive && static_cast<int32_t>(millis() - motorUntilMs) >= 0) stopMotors();
 }
 
-void playTtsFrame(const uint8_t* payload, size_t length) {
-#if ENABLE_TTS
-  if (!payload || length <= 4 || length > 244 || payload[0] != 'T' ||
-      payload[1] != '<' || payload[2] != 'G' || payload[3] != '>') return;
-  ttsSerial.write(payload + 1, length - 1);
-  Serial.printf("LU6288 text command sent: %u bytes\n",
-      static_cast<unsigned>(length - 1));
-#else
-  (void)payload;
-  (void)length;
-#endif
-}
-
 void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
   switch (type) {
     case WStype_CONNECTED:
@@ -140,7 +127,6 @@ void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
       break;
     case WStype_BIN:
       if (length == 1) motorCommand(static_cast<char>(payload[0]));
-      else playTtsFrame(payload, length);
       break;
     case WStype_TEXT:
       if (length == 3 && memcmp(payload, "ACK", 3) == 0) {
@@ -301,11 +287,7 @@ void setup() {
   pinMode(microphoneAdcPin, INPUT);
   analogReadResolution(12);
   analogSetPinAttenuation(microphoneAdcPin, ADC_11db);
-#if ENABLE_TTS
-  ttsSerial.begin(TTS_UART_BAUD, SERIAL_8N1, -1, TTS_UART_TX_PIN);
-  Serial.printf("LU6288 UART: TX=GPIO%d, baud=%lu, RX/BUSY disconnected\n",
-      TTS_UART_TX_PIN, static_cast<unsigned long>(TTS_UART_BAUD));
-#endif
+  initTtsAudioPlayer();
 #if ENABLE_MOTORS
   pinMode(MOTOR_LEFT_PIN, OUTPUT);
   pinMode(MOTOR_RIGHT_PIN, OUTPUT);
@@ -325,6 +307,16 @@ void setup() {
   // Allow the receive loop to process queued Pong frames after a slow write.
   webSocket.enableHeartbeat(15000, 15000, 2);
   Serial.printf("Target: ws://%s:%d%s\n", BACKEND_HOST, BACKEND_PORT, CAMERA_WS_PATH);
+  char ttsPath[96];
+  snprintf(ttsPath, sizeof(ttsPath), "/ws/tts?device_id=%s", "esp32s3_cam_001");
+  ttsWebSocket.onEvent(ttsWebSocketEvent);
+  ttsWebSocket.begin(BACKEND_HOST, BACKEND_PORT, ttsPath);
+  ttsWebSocket.setReconnectInterval(3000);
+  ttsWebSocket.enableHeartbeat(15000, 15000, 2);
+  if (xTaskCreatePinnedToCore(ttsNetworkTask, "tts_ws", 6144, nullptr, 2, nullptr, 0) != pdPASS) {
+    Serial.println("TTS network task could not start");
+  }
+  Serial.printf("TTS target: ws://%s:%d%s\n", BACKEND_HOST, BACKEND_PORT, ttsPath);
 }
 
 void loop() {

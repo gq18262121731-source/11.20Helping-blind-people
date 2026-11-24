@@ -717,7 +717,7 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
           else if (status != 'ready' && status != 'simulation')
             const Text(
               '检测模型不可用，请检查电脑后端日志。',
-              style: TextStyle(color: Color(0xffffd68a)),
+              style: TextStyle(color: warningInk),
             )
           else if (objects.isEmpty)
             const Text('本帧未检测到目标。这不表示周围一定安全。', style: TextStyle(color: muted))

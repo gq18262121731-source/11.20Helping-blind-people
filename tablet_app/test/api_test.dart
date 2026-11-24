@@ -48,6 +48,26 @@ void main() {
     api.dispose();
   });
   test(
+    'raw voice WAV can override content type without changing JPEG defaults',
+    () async {
+      final wav = Uint8List.fromList([82, 73, 70, 70, 0, 0, 0, 0]);
+      final api = mockApi((options, bytes) {
+        expect(options.headers['Authorization'], 'Bearer test-token');
+        expect(options.contentType, 'audio/wav');
+        expect(bytes, wav);
+        return jsonBody({'text': '停一下', 'requires_confirmation': true});
+      });
+      final result = await api.map(
+        '/api/family/voice/transcribe?device_id=esp32s3_cam_001',
+        method: 'POST',
+        data: wav,
+        contentType: 'audio/wav',
+      );
+      expect(result['text'], '停一下');
+      api.dispose();
+    },
+  );
+  test(
     'auth expiry, login rejection, and missing old backend endpoints',
     () async {
       var expired = 0;

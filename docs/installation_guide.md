@@ -53,6 +53,8 @@ LLM_TIMEOUT_SECONDS=300
 
 如浏览器提示尚未允许声音，请直接点击“测试播报”；如没有中文声音，请检查系统中文语音和声音输出设置。此功能使用浏览器语音合成，不经过 Ollama 对话模型，也不需要麦克风权限。
 
+帽端播报经独立 `/ws/tts` PCM 通道传输：后端优先读本地音频缓存，未命中时用 Edge TTS + FFmpeg 异步合成后缓存；ESP32 通过 MAX98357A I2S 输出并回传播放回执。部署电脑需安装 Edge TTS（`python -m pip install -r backend/requirements-tts.txt`）及 FFmpeg。ESP32 本地配置需设置 `TTS_I2S_BCLK_PIN`、`TTS_I2S_LRCLK_PIN`、`TTS_I2S_DIN_PIN` 三个已核实的接线 GPIO。未配置时固件会报告 I2S 不可用；源码/软件闭环已实现，但烧录及真机试听仍待执行。
+
 ## 无硬件软件联调
 
 将 `backend/.env` 中的 `SIMULATION_MODE` 改为 `true`，启动后端后另开终端运行：
